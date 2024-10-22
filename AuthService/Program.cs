@@ -27,7 +27,6 @@ BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.Strin
 BsonSerializer.RegisterSerializer(new DateTimeSerializer(MongoDB.Bson.BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(MongoDB.Bson.BsonType.String));
 
-
 builder.Services.ConfigureDbSettings(builder.Configuration.GetSection("DbSettings"));
 builder.Services.ConfigureJwtToken(builder.Configuration.GetSection("JwtConfig"));
 builder.Services.ConfigureSmtpServer(builder.Configuration.GetSection("EmailConfiguration"));
@@ -65,8 +64,6 @@ builder.Services.ConfigureMongoDbIdentity<ApplicationUser, ApplicationRole, Guid
     .AddDefaultTokenProviders()
     .AddTokenProvider<DigitTokenProvider>(DigitTokenProvider.FourDigitEmail);
 
-
-
 var tokenValidationParameters = new TokenValidationParameters
 {
     ValidateIssuerSigningKey = true,
@@ -97,6 +94,7 @@ builder.Services.AddCors(p => p.AddPolicy("corsapp", builder =>
 
 builder.Services.AddScoped<IEmailService, MailService>();
 builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
+builder.Services.AddSingleton<ICaptchaValidator, CaptchaValidator>();
 
 builder.Services.AddProblemDetails(ProblemDetailsConfigurator.Configure);
 
