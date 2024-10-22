@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33403.182
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BionicPlusAPI", "BionicPlusAPI\BionicPlusAPI.csproj", "{8DDCA5E4-0C64-48ED-BCD4-D30F1517E71B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PregnancyDBMongoAccessor", "CardMongoAccessor\PregnancyDBMongoAccessor.csproj", "{AFA282E0-34AC-4F8C-8FF2-77C671A0826B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DomainObjects", "DomainObjects\DomainObjects.csproj", "{BB8B17C2-9737-4F40-B0CA-1AEB78AA0A09}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuthService", "..\AuthService\AuthService.csproj", "{39B7B13E-508F-4AE6-97FB-9F4F5FF48E03}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8DDCA5E4-0C64-48ED-BCD4-D30F1517E71B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DDCA5E4-0C64-48ED-BCD4-D30F1517E71B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DDCA5E4-0C64-48ED-BCD4-D30F1517E71B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DDCA5E4-0C64-48ED-BCD4-D30F1517E71B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFA282E0-34AC-4F8C-8FF2-77C671A0826B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFA282E0-34AC-4F8C-8FF2-77C671A0826B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFA282E0-34AC-4F8C-8FF2-77C671A0826B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFA282E0-34AC-4F8C-8FF2-77C671A0826B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB8B17C2-9737-4F40-B0CA-1AEB78AA0A09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB8B17C2-9737-4F40-B0CA-1AEB78AA0A09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB8B17C2-9737-4F40-B0CA-1AEB78AA0A09}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB8B17C2-9737-4F40-B0CA-1AEB78AA0A09}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39B7B13E-508F-4AE6-97FB-9F4F5FF48E03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39B7B13E-508F-4AE6-97FB-9F4F5FF48E03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39B7B13E-508F-4AE6-97FB-9F4F5FF48E03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39B7B13E-508F-4AE6-97FB-9F4F5FF48E03}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {108D052B-7165-4FF3-99C0-104B5C74932C}
+	EndGlobalSection
+EndGlobal

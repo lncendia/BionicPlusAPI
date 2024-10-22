@@ -1,0 +1,20 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DomainObjects.Pregnancy
+{
+    public enum OperationType
+    {
+        gt,
+        ge,
+        lt,
+        le,
+        eq,
+        ne,
+        and,
+        or
+    }
+}
