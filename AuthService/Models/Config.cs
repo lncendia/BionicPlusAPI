@@ -8,7 +8,7 @@ namespace AuthService.Models
         public EndpointsConfig? Endpoints { get; set; }
 
         [JsonPropertyName("settings")]
-        public SettingsConfig? Settings { get; set; }
+        public ClientSettingsConfig? Settings { get; set; }
 
         [JsonPropertyName("payment")]
         public PaymentConfig? Payment { get; set; }

@@ -34,6 +34,7 @@ namespace AuthService.Controllers
         private readonly TokenValidationParameters _tokenValidationParameters;
         private readonly IEmailService _emailService;
         private readonly ISubscriptionService _subscriptionService;
+        private readonly ICaptchaValidator _captchaValidator;
         private readonly ILogger<AuthenticationController> _logger;
         private readonly IHttpContextAccessor _context;
 
@@ -43,6 +44,7 @@ namespace AuthService.Controllers
             TokenValidationParameters tokenValidationParameters,
             IEmailService emailService,
             ISubscriptionService subscriptionService,
+            ICaptchaValidator captchaValidator,
             IHttpContextAccessor httpContextAccessor,
             ILogger<AuthenticationController> logger)
         {
@@ -52,6 +54,7 @@ namespace AuthService.Controllers
             _tokenValidationParameters = tokenValidationParameters;
             _emailService = emailService;
             _subscriptionService = subscriptionService;
+            _captchaValidator = captchaValidator;
             _logger = logger;
             _context = httpContextAccessor;
         }
@@ -68,12 +71,23 @@ namespace AuthService.Controllers
         //}
 
         [HttpPost]
-        [Route("forgot/password/{email}")]
-        public async Task<IActionResult> ForgotPassword(string email)
+        [Route("forgot/password/")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest req)
         {
+            var isCaptchaValid = await _captchaValidator.Validate(req.Captcha);
+
+            if (!isCaptchaValid)
+            {
+                return BadRequest(new RegisterResponse
+                { Success = false,
+                    Message = "Captcha was not validated",
+                    Code = AuthErrorCode.CaptchaNotPassed
+                });
+            }
+            
             try
             {
-                var user = await _userManager.FindByEmailAsync(email);
+                var user = await _userManager.FindByEmailAsync(req.Email);
 
                 var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
@@ -84,6 +98,7 @@ namespace AuthService.Controllers
             {
                 _logger.LogError($"An error occurred while register: {ex}");
             }
+            
             return BadRequest();
         }
 
@@ -209,7 +224,8 @@ namespace AuthService.Controllers
             {
                 return Ok(new CheckEmailResponse { EmailStatus = EmailStatus.NotFound });
             }
-            if(user != null && user.EmailConfirmed == false)
+            
+            if(user.EmailConfirmed == false)
             {
                 return Ok(new CheckEmailResponse { EmailStatus = EmailStatus.NotConfirmed });
             }
@@ -284,6 +300,13 @@ namespace AuthService.Controllers
         {
             try
             {
+                var isCaptchaValid = await _captchaValidator.Validate(register.Captcha);
+
+                if (!isCaptchaValid)
+                {
+                    return new RegisterResponse { Success = false, Message = "Captcha was not validated", Code = AuthErrorCode.CaptchaNotPassed };
+                }
+                
                 var userExist = await _userManager.FindByEmailAsync(register.Email);
                 if (userExist != null)
                 {
