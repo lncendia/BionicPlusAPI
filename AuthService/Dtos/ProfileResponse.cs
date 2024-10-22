@@ -1,10 +1,7 @@
 ﻿using AuthService.Models;
 using DomainObjects.Pregnancy;
-using DomainObjects.Pregnancy.UserProfile;
 using IdentityLibrary;
 using IdentityLibrary.Models;
-using Newtonsoft.Json.Converters;
-using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace AuthService.Dtos
@@ -40,5 +37,8 @@ namespace AuthService.Dtos
 
         [JsonPropertyName("height")]
         public double? Height { get; set; }
+        
+        [JsonPropertyName("subscription")]
+        public ProfileSubscription ProfileSubscription { get; set; }
     }
 }

@@ -47,9 +47,9 @@ namespace AuthService.Controllers
                 roles.Add(await _roleManager.FindByIdAsync(roleId.ToString()));
             }
 
-            var sub = await _subscriptionService.GetSubscription(user.BillingProfile!.ActiveSubscriptionId);
+            var subscription = await _subscriptionService.GetSubscription(user.BillingProfile!.ActiveSubscriptionId);
 
-            if (sub == null)
+            if (subscription == null)
             {
                 _logger.LogError($"An error occurred while getting subscription for user: {user.Id}");
                 return NotFound("Subscription not exist");
@@ -66,7 +66,8 @@ namespace AuthService.Controllers
                 UserId = user.Id,
                 FullName = user.FullName,
                 Roles = roles,
-                PlanId = sub.PlanId,
+                PlanId = subscription.PlanId,
+                ProfileSubscription = new ProfileSubscription(subscription)
             };
 
             return Ok(profile);
@@ -239,7 +240,7 @@ namespace AuthService.Controllers
             try
             {
                 var username = HttpContext.User.Identity!.Name;
-                var cancelSubResult = await _subscriptionService.CancelUserSubscription();
+                await _subscriptionService.CancelUserSubscription();
                 var user = await _userManager.FindByNameAsync(username);
                 await _userManager.DeleteAsync(user);
             }
