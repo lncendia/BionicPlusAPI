@@ -4,7 +4,6 @@ using Hangfire;
 using Hangfire.Dashboard;
 using HangfireBasicAuthenticationFilter;
 using Hellang.Middleware.ProblemDetails;
-using IdentityLibrary.Models;
 using MailSenderLibrary.Implementations;
 using MailSenderLibrary.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -20,6 +19,7 @@ using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using PaymentService.Services.Providers;
 using System.Text;
+using IdentityLibrary;
 
 var builder = WebApplication.CreateBuilder(args);
 

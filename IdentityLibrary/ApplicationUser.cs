@@ -4,8 +4,7 @@ using DomainObjects.Pregnancy.UserProfile;
 using DomainObjects.Subscription;
 using MongoDbGenericRepository.Attributes;
 
-
-namespace IdentityLibrary.Models
+namespace IdentityLibrary
 {
     [CollectionName("users")]
     public class ApplicationUser : MongoIdentityUser<Guid>

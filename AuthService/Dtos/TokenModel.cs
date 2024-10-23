@@ -1,8 +1,12 @@
-﻿namespace AuthService.Dtos
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AuthService.Dtos;
+
+public class TokenModel
 {
-    public class TokenModel
-    {
-        public string? AccessToken { get; set; }
-        public string? RefreshToken { get; set; }
-    }
+    [Required]
+    public string AccessToken { get; set; } = string.Empty;
+    
+    [Required]
+    public string RefreshToken { get; set; } = string.Empty;
 }

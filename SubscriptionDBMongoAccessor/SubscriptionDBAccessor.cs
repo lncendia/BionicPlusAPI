@@ -1,10 +1,8 @@
 ﻿using DomainObjects.Infrastracture.Exceptions;
-using DomainObjects.Pregnancy;
 using DomainObjects.Subscription;
 using MongoDB.Driver;
 using SubscriptionDBMongoAccessor.Infrastracture;
 using SubscriptionDBMongoAccessor.MongoClasses;
-using System.Numerics;
 
 namespace SubscriptionDBMongoAccessor
 {
@@ -16,8 +14,6 @@ namespace SubscriptionDBMongoAccessor
         private const string SUBSCRIPTIONS_COLLECTION_NAME = "Subscriptions";
         private const string PROMOCODE_COLLECTION_NAME = "Promocodes";
 
-        private readonly MongoClient _client;
-        private readonly IMongoDatabase _db;
         private readonly IMongoCollection<MongoPlan> _plansCollection;
         private readonly IMongoCollection<MongoUsage> _usageCollection;
         private readonly IMongoCollection<MongoSubscription> _subscriptionsCollection;
@@ -25,29 +21,30 @@ namespace SubscriptionDBMongoAccessor
 
         public SubscriptionDBAccessor(DbSettings dbSettings)
         {
-            _client = new MongoClient(dbSettings.ConnectionString);
-            _db = _client.GetDatabase(DB_NAME);
-            _plansCollection = _db.GetCollection<MongoPlan>(PLANS_COLLECTION_NAME);
-            _usageCollection = _db.GetCollection<MongoUsage>(USAGES_COLLECTION_NAME);
-            _subscriptionsCollection = _db.GetCollection<MongoSubscription>(SUBSCRIPTIONS_COLLECTION_NAME);
-            _promocodeCollection = _db.GetCollection<MongoPromocode>(PROMOCODE_COLLECTION_NAME);
+            var client = new MongoClient(dbSettings.ConnectionString);
+            var db = client.GetDatabase(DB_NAME);
+            _plansCollection = db.GetCollection<MongoPlan>(PLANS_COLLECTION_NAME);
+            _usageCollection = db.GetCollection<MongoUsage>(USAGES_COLLECTION_NAME);
+            _subscriptionsCollection = db.GetCollection<MongoSubscription>(SUBSCRIPTIONS_COLLECTION_NAME);
+            _promocodeCollection = db.GetCollection<MongoPromocode>(PROMOCODE_COLLECTION_NAME);
+            // CreateFreePlan();
         }
 
-        //public void CreatePlan()
-        //{
-        //    var plan = new MongoPlan()
-        //    {
-        //        BillingPeriod = DomainObjects.Subscription.BillingPeriod.m,
-        //        BillingUnit = 1,
-        //        CreationDate = DateTime.Now,
-        //        ExpirationDate = DateTime.Now.AddYears(2),
-        //        Currency = DomainObjects.Subscription.Currency.usd,
-        //        Limits = new DomainObjects.Subscription.Limit { RollbackLimit = 10, SurveyLimit = 1 },
-        //        Name = "FREE",
-        //        Price = 0,
-        //    };
-        //    _plansCollection.InsertOne(plan);
-        //}
+        public void CreateFreePlan()
+        {
+            var plan = new MongoPlan()
+            {
+                BillingPeriod = BillingPeriod.m,
+                BillingUnit = 1,
+                CreationDate = DateTime.Now,
+                ExpirationDate = DateTime.Now.AddYears(2),
+                Currency = Currency.usd,
+                Limits = new Limit { RollbackLimit = 10, SurveyLimit = 1 },
+                Name = "FREE",
+                Price = 0,
+            };
+            _plansCollection.InsertOne(plan);
+        }
 
 
         public async Task<string> SetFreeSubscription(string userId, string freePlanId)
@@ -232,12 +229,7 @@ namespace SubscriptionDBMongoAccessor
             var filter = Builders<MongoSubscription>.Filter.Where(u => u.InvoiceId == invoice);
             var subscription = (await _subscriptionsCollection.FindAsync(filter)).FirstOrDefault();
             
-            if(subscription == null)
-            {
-                return false;
-            }
-
-            return true;
+            return subscription != null;
         }
 
         private DateTime GetExpirationDateFromNow(MongoPlan plan, DateTime creationDate)
@@ -257,7 +249,7 @@ namespace SubscriptionDBMongoAccessor
 
         private void ApplySale(MongoPlan plan, decimal sale)
         {
-            plan.Price = plan.Price - sale;
+            plan.Price -= sale;
         }
 
         public async Task<BillingPromocode?> GetPromocode(string promocode)
@@ -265,12 +257,7 @@ namespace SubscriptionDBMongoAccessor
             var filter = Builders<MongoPromocode>.Filter.Where(u => u.Promocode == promocode);
             var promoModel = (await _promocodeCollection.FindAsync(filter)).FirstOrDefault();
 
-            if(promoModel == null)
-            {
-                return null;
-            }
-
-            return promoModel.Convert();
+            return promoModel?.Convert();
         }
     }
 }

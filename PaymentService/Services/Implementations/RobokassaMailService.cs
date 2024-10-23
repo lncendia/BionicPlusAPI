@@ -19,19 +19,19 @@ namespace PaymentService.Services.Implementations
         }
 
         [Queue("emails")]
-        public void SendRecurrentPaymentEmail(string mailAddress, DateTime nextSubDate, string sum, string subName)
+        public Task SendRecurrentPaymentEmailAsync(string mailAddress, DateTime nextSubDate, string sum, string subName)
         {
-            _mailService.SendEmail(GenerateRecurrentPaymentMessage(mailAddress, nextSubDate, sum, subName, LocalizationsLanguage.ru));
+            return _mailService.SendEmailAsync(GenerateRecurrentPaymentMessage(mailAddress, nextSubDate, sum, subName, LocalizationsLanguage.ru));
         }
 
         [Queue("emails")]
-        public void SendSuccessPaymentEmail(string mailAddress, DateTime subStartDate, DateTime subEndDate, string subName)
+        public Task SendSuccessPaymentEmailAsync(string mailAddress, DateTime subStartDate, DateTime subEndDate, string subName)
         {
-            _mailService.SendEmail(GenerateSuccessPaymentMessage(mailAddress, subStartDate, subEndDate, subName, LocalizationsLanguage.ru));
+            return _mailService.SendEmailAsync(GenerateSuccessPaymentMessage(mailAddress, subStartDate, subEndDate, subName, LocalizationsLanguage.ru));
         }
 
         [Queue("emails")]
-        public void SendFailPaymentEmail(string mailAddress)
+        public Task SendFailPaymentEmailAsync(string mailAddress)
         {
             throw new NotImplementedException();
         }
