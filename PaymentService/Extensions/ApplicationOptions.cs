@@ -1,4 +1,4 @@
-namespace AuthService.Extensions;
+namespace PaymentService.Extensions;
 
 /// <summary>
 /// Статический класс для добавления настроек приложения в коллекцию служб
@@ -17,22 +17,19 @@ public static class ApplicationOptions
             // Настраиваем настройки базы данных
             .ConfigureDbSettings(configuration.GetSection("DbSettings"))
 
-            // Настраиваем настройки JWT-токена
-            .ConfigureJwtToken(configuration.GetSection("JwtConfig"))
+            // Настраиваем настройки планов
+            .ConfigurePlansSettings(configuration.GetSection("PlansConfiguration"))
+
+            // Настраиваем настройки информации о продавце
+            .ConfigureMerchantInfoSettings(configuration.GetSection("MerchantInfo"))
+
+            // Настраиваем разрешенные IP-адреса
+            .ConfigureAllowedIps(configuration.GetSection("AllowedIps"))
 
             // Настраиваем настройки SMTP-сервера
             .ConfigureSmtpServer(configuration.GetSection("EmailConfiguration"))
 
             // Настраиваем конечные точки
-            .ConfigureEndpoints(configuration.GetSection("EndpointsConfig"))
-
-            // Настраиваем настройки конфигурации
-            .ConfigureSettingsConfig(configuration.GetSection("SettingsConfig"))
-
-            // Настраиваем настройки платежей
-            .ConfigurePaymentConfig(configuration.GetSection("PaymentConfig"))
-
-            // Настраиваем настройки обратного прокси
-            .ConfigureReverseProxyConfig(configuration.GetSection("ReverseProxyConfig"));
+            .ConfigureEndpoints(configuration.GetSection("EndpointsConfig"));
     }
 }

@@ -1,6 +1,6 @@
 using Microsoft.OpenApi.Models;
 
-namespace AuthService.Extensions;
+namespace PaymentService.Extensions;
 
 /// <summary>
 /// Класс для настройки Swagger в приложении.
@@ -15,7 +15,7 @@ public static class SwaggerServices
     public static void AddSwaggerServices(this IServiceCollection services, IConfiguration configuration)
     {
         // Получение конфигурационных данных из файла конфигурации
-        var reverseProxyString = configuration.GetValue<string>("ReverseProxyConfig:LoginProxy");
+        var reverseProxyString = configuration.GetValue<string>("ReverseProxyConfig:PaymentProxy");
 
         // Инициализируем переменную prefix значением null
         string? prefix = null;
