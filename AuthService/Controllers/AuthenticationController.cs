@@ -1,469 +1,577 @@
-﻿using AspNetCore.Identity.MongoDbCore.Models;
-using AuthService.Dtos;
-using AuthService.Infrastructure;
+﻿using AuthService.Dtos;
 using AuthService.Models;
 using AuthService.Services.Implementations;
 using AuthService.Services.Interfaces;
-using DnsClient;
 using DomainObjects.Pregnancy.Localizations;
 using DomainObjects.Subscription;
-using IdentityLibrary.Models;
 using MailSenderLibrary.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json.Linq;
-using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
+using IdentityLibrary;
 
-namespace AuthService.Controllers
+namespace AuthService.Controllers;
+
+/// <summary>
+/// Контроллер для аутентификации пользователей.
+/// </summary>
+[ApiController]
+[Route("api/v1/authenticate")]
+public class AuthenticationController : ControllerBase
 {
-    [ApiController]
-    [Route("api/v1/authenticate")]
-    public class AuthenticationController : ControllerBase
+    /// <summary>
+    /// Менеджер пользователей.
+    /// </summary>
+    private readonly UserManager<ApplicationUser> _userManager;
+
+    /// <summary>
+    /// Сервис для отправки электронной почты.
+    /// </summary>
+    private readonly IEmailService _emailService;
+
+    /// <summary>
+    /// Сервис для работы с JWT токенами.
+    /// </summary>
+    private readonly IJwtService _jwtService;
+
+    /// <summary>
+    /// Фабрика для создания объектов ClaimsPrincipal.
+    /// </summary>
+    private readonly IUserClaimsPrincipalFactory<ApplicationUser> _userClaimsPrincipalFactory;
+
+    /// <summary>
+    /// Сервис для управления подписками.
+    /// </summary>
+    private readonly ISubscriptionService _subscriptionService;
+
+    /// <summary>
+    /// Логгер для логирования событий.
+    /// </summary>
+    private readonly ILogger<AuthenticationController> _logger;
+
+    /// <summary>
+    /// Доступ к HTTP контексту.
+    /// </summary>
+    private readonly IHttpContextAccessor _context;
+
+    /// <summary>
+    /// Конструктор контроллера аутентификации.
+    /// </summary>
+    /// <param name="userManager">Менеджер пользователей.</param>
+    /// <param name="emailService">Сервис для отправки электронной почты.</param>
+    /// <param name="subscriptionService">Сервис для управления подписками.</param>
+    /// <param name="httpContextAccessor">Доступ к HTTP контексту.</param>
+    /// <param name="logger">Логгер для логирования событий.</param>
+    /// <param name="jwtService">Сервис для работы с JWT токенами.</param>
+    /// <param name="userClaimsPrincipalFactory">Фабрика для создания объектов ClaimsPrincipal.</param>
+    public AuthenticationController(
+        UserManager<ApplicationUser> userManager,
+        IEmailService emailService,
+        ISubscriptionService subscriptionService,
+        IHttpContextAccessor httpContextAccessor,
+        ILogger<AuthenticationController> logger,
+        IJwtService jwtService,
+        IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory)
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<ApplicationRole> _roleManager;
-        private readonly JwtConfig _jwtConfig;
-        private readonly TokenValidationParameters _tokenValidationParameters;
-        private readonly IEmailService _emailService;
-        private readonly ISubscriptionService _subscriptionService;
-        private readonly ILogger<AuthenticationController> _logger;
-        private readonly IHttpContextAccessor _context;
+        _userManager = userManager;
+        _emailService = emailService;
+        _subscriptionService = subscriptionService;
+        _logger = logger;
+        _jwtService = jwtService;
+        _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
+        _context = httpContextAccessor;
+    }
 
-        public AuthenticationController(UserManager<ApplicationUser> userManager,
-            RoleManager<ApplicationRole> roleManager,
-            IOptions<JwtConfig> jwtConfig,
-            TokenValidationParameters tokenValidationParameters,
-            IEmailService emailService,
-            ISubscriptionService subscriptionService,
-            IHttpContextAccessor httpContextAccessor,
-            ILogger<AuthenticationController> logger)
+    /// <summary>
+    /// Метод для запроса на восстановление пароля.
+    /// </summary>
+    /// <param name="email">Email пользователя.</param>
+    /// <returns>Ответ с сообщением об успешной отправке или сообщение об ошибке.</returns>
+    [HttpPost]
+    [Route("forgot/password/{email}")]
+    public async Task<IActionResult> ForgotPassword(string email)
+    {
+        try
         {
-            _userManager = userManager;
-            _roleManager = roleManager;
-            _jwtConfig = jwtConfig.Value;
-            _tokenValidationParameters = tokenValidationParameters;
-            _emailService = emailService;
-            _subscriptionService = subscriptionService;
-            _logger = logger;
-            _context = httpContextAccessor;
+            // Поиск пользователя по email
+            var user = await _userManager.FindByEmailAsync(email);
+
+            // Генерация токена для сброса пароля
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            // Отправка email с токеном для сброса пароля
+            await _emailService.SendEmailAsync(
+                MailGenerator.GenerateTokenMessage(token, user.Email, LocalizationsLanguage.en));
+
+            // Возвращаем успешный ответ
+            return Ok();
         }
-
-
-        ////use this method if it necessary to add new role
-        //[HttpPost]
-        //[Route("roles/add")]
-        //public async Task<IActionResult> CreateRole([FromBody] RoleRequest roleRequest)
-        //{
-        //    var appRole = new ApplicationRole { Name = roleRequest.Role };
-        //    var createRole = await _roleManager.CreateAsync(appRole);
-        //    return Ok(new { Message = $"Role {roleRequest.Role} created successfully" });
-        //}
-
-        [HttpPost]
-        [Route("forgot/password/{email}")]
-        public async Task<IActionResult> ForgotPassword(string email)
+        catch (Exception ex)
         {
-            try
-            {
-                var user = await _userManager.FindByEmailAsync(email);
-
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-                _emailService.SendEmail(MailGenerator.GenerateTokenMessage(token, user.Email, LocalizationsLanguage.en));
-                return Ok();
-            }
-            catch(Exception ex)
-            {
-                _logger.LogError($"An error occurred while register: {ex}");
-            }
+            // Логирование ошибки и возврат сообщения об ошибке
+            _logger.LogError(ex, "Произошла ошибка при запросе на восстановление пароля");
             return BadRequest();
         }
+    }
 
-        [HttpPost]
-        [Route("recover/password")]
-        public async Task<IActionResult> RecoverPassword(RecoverPasswordRequest req)
+    /// <summary>
+    /// Метод для восстановления пароля.
+    /// </summary>
+    /// <param name="req">Объект, содержащий email, токен и новый пароль.</param>
+    /// <returns>Ответ с сообщением об успешном восстановлении или сообщение об ошибке.</returns>
+    [HttpPost]
+    [Route("recover/password")]
+    public async Task<IActionResult> RecoverPassword(RecoverPasswordRequest req)
+    {
+        // Поиск пользователя по email
+        var user = await _userManager.FindByEmailAsync(req.Email);
+
+        // Сброс пароля пользователя с использованием токена
+        var result = await _userManager.ResetPasswordAsync(user, req.Token, req.NewPassword);
+
+        // Если сброс пароля не удался, возвращаем ошибку
+        if (!result.Succeeded)
         {
-            var user = await _userManager.FindByEmailAsync(req.Email);
-
-            var result = await _userManager.ResetPasswordAsync(user, req.Token, req.NewPassword);
-
-            if (!result.Succeeded)
+            return BadRequest(new RegisterResponse
             {
-                return BadRequest(new RegisterResponse
-                {
-                    Success = false,
-                    Message = $"Recover password failed {result?.Errors?.FirstOrDefault()?.Description}",
-                    Code = Enum.Parse<AuthErrorCode>(result?.Errors?.FirstOrDefault()?.Code ?? "")
-                });
-            }
-            
-            return Ok();
+                Success = false,
+                Message = $"Не удалось восстановить пароль {result.Errors?.FirstOrDefault()?.Description}",
+                Code = Enum.Parse<AuthErrorCode>(result.Errors?.FirstOrDefault()?.Code ?? "")
+            });
         }
 
-        [Authorize]
-        [HttpPost]
-        [Route("change/password")]
-        public async Task<IActionResult> ChangePassword(ChangePasswordRequest req)
+        // Возвращаем успешный ответ
+        return Ok();
+    }
+
+    /// <summary>
+    /// Метод для изменения пароля текущего пользователя.
+    /// </summary>
+    /// <param name="req">Объект, содержащий старый и новый пароль.</param>
+    /// <returns>Ответ с сообщением об успешном изменении или сообщение об ошибке.</returns>
+    [Authorize]
+    [HttpPost]
+    [Route("change/password")]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest req)
+    {
+        // Получение идентификатора текущего пользователя из контекста запроса
+        var userId = _context.HttpContext!.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        // Поиск пользователя по идентификатору
+        var user = await _userManager.FindByIdAsync(userId);
+
+        // Изменение пароля пользователя
+        var result = await _userManager.ChangePasswordAsync(user, req.OldPassword, req.NewPassword);
+
+        // Если изменение пароля не удалось, возвращаем ошибку
+        if (!result.Succeeded)
         {
-            var userId = _context.HttpContext!.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByIdAsync(userId);
-
-            var result = await _userManager.ChangePasswordAsync(user, req.OldPassword, req.NewPassword);
-
-            if (!result.Succeeded)
+            return BadRequest(new RegisterResponse
             {
-                return BadRequest(new RegisterResponse
-                {
-                    Success = false,
-                    Message = $"Change password failed {result?.Errors?.FirstOrDefault()?.Description}",
-                    Code = Enum.Parse<AuthErrorCode>(result?.Errors?.FirstOrDefault()?.Code ?? "")
-                });
-            }
-
-            return Ok();
+                Success = false,
+                Message = $"Не удалось изменить пароль {result.Errors?.FirstOrDefault()?.Description}",
+                Code = Enum.Parse<AuthErrorCode>(result.Errors?.FirstOrDefault()?.Code ?? "")
+            });
         }
 
+        // Возвращаем успешный ответ
+        return Ok();
+    }
 
-        [HttpPost]
-        [Route("register")]
-        [ProducesResponseType(typeof(RegisterResponse), (int)HttpStatusCode.OK)]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest register)
-        {
-            var result = await RegisterAsync(register);
-            return result.Success ? Ok(result) : BadRequest(result);
-        }
 
-        [HttpPost]
-        [Route("login")]
-        [ProducesResponseType(typeof(LoginResponse), (int)HttpStatusCode.OK)]
-        public async Task<IActionResult> Login([FromBody] LoginRequest login)
-        {
-            var result = await LoginAsync(login);
-            return result.Success ? Ok(result) : BadRequest(result);
-        }
+    /// <summary>
+    /// Метод для регистрации нового пользователя.
+    /// </summary>
+    /// <param name="register">Объект, содержащий данные для регистрации пользователя.</param>
+    /// <returns>Ответ с сообщением об успешной регистрации или сообщение об ошибке.</returns>
+    [HttpPost]
+    [Route("register")]
+    [ProducesResponseType(typeof(RegisterResponse), (int)HttpStatusCode.OK)]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest register)
+    {
+        ApplicationUser? user = null;
 
-        [HttpPost]
-        [Route("refresh")]
-        public async Task<IActionResult> RefreshToken(TokenModel tokenModel)
+        try
         {
-            if (tokenModel is null)
+            // Поиск пользователя по email
+            user = await _userManager.FindByEmailAsync(register.Email);
+
+            // Если пользователь уже существует, возвращаем ошибку
+            if (user != null)
             {
-                return BadRequest("Invalid client request");
+                return BadRequest(new RegisterResponse { Success = false, Message = "Пользователь уже существует" });
             }
 
-            string? accessToken = tokenModel.AccessToken;
-            string? refreshToken = tokenModel.RefreshToken;
-            try
+            // Создание нового пользователя
+            user = new ApplicationUser
             {
-                var principal = GetPrincipalFromExpiredToken(accessToken);
-                if (principal == null)
-                {
-                    return BadRequest("Invalid access token");
-                }
-
-                string username = principal.Identity!.Name!;
-
-
-                var user = await _userManager.FindByNameAsync(username);
-
-                if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.Now)
-                {
-                    return BadRequest("Invalid access token or refresh token");
-                }
-
-                var newAccessToken = await GenerateAccessToken(user);
-                var newRefreshToken = GenerateRefreshToken();
-
-                user.RefreshToken = newRefreshToken;
-                await _userManager.UpdateAsync(user);
-
-                return new ObjectResult(new
-                {
-                    accessToken = new JwtSecurityTokenHandler().WriteToken(newAccessToken),
-                    refreshToken = newRefreshToken,
-                    RefreshTokenExpiryTime = _jwtConfig.RefreshTokenValidityInDays,
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"An error occurred while refresh: {ex}");
-                return BadRequest("Invalid client request");
-            }
-        }
-
-        [HttpGet]
-        [Route("check")]
-        public async Task<ActionResult<CheckEmailResponse>> CheckUserByEmail(string email)
-        {
-            var user = await _userManager.FindByEmailAsync(email);
-
-            if(user == null)
-            {
-                return Ok(new CheckEmailResponse { EmailStatus = EmailStatus.NotFound });
-            }
-            if(user != null && user.EmailConfirmed == false)
-            {
-                return Ok(new CheckEmailResponse { EmailStatus = EmailStatus.NotConfirmed });
-            }
-            
-
-            return Ok(new CheckEmailResponse { EmailStatus = EmailStatus.Created });
-        }
-
-        [Authorize]
-        [HttpPost]
-        [Route("revoke")]
-        public async Task<IActionResult> Revoke()
-        {
-            var username = HttpContext.User.Identity!.Name;
-            var user = await _userManager.FindByNameAsync(username);
-            if (user == null)
-            {
-                return BadRequest("User not exist");
+                Email = register.Email,
+                UserName = register.Email
             };
 
-            user.RefreshToken = null;
+            // Создание пользователя в системе
+            var createUserResult = await _userManager.CreateAsync(user, register.Password);
+
+            // Если создание пользователя не удалось, возвращаем ошибку
+            if (!createUserResult.Succeeded)
+            {
+                return BadRequest(new RegisterResponse
+                {
+                    Success = false,
+                    Message =
+                        $"Не удалось создать пользователя {createUserResult.Errors?.FirstOrDefault()?.Description}",
+                    Code = Enum.Parse<AuthErrorCode>(createUserResult.Errors?.FirstOrDefault()?.Code ?? "")
+                });
+            }
+
+            // Создание объекта principal для пользователя
+            var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
+
+            // Получение данных запроса
+            var request = _context.HttpContext!.Request;
+
+            // Формируем издателя токена
+            var issuer = $"{request.Scheme}://{request.Host.Value}";
+
+            // Генерация токена доступа
+            var token = _jwtService.GenerateAccessToken(principal, issuer);
+
+            // Добавление токена доступа в заголовки запроса
+            _context.HttpContext!.Request.Headers.Add("Authorization", $"Bearer {token}");
+
+            // Установка бесплатной подписки для пользователя
+            var subscriptionId = await _subscriptionService.SetFreeSubscription(user.Id.ToString());
+
+            // Если установка подписки не удалась, удаляем пользователя и возвращаем ошибку
+            if (subscriptionId == null)
+            {
+                await _userManager.DeleteAsync(user);
+                return BadRequest(new RegisterResponse
+                {
+                    Success = false,
+                    Message = "Не удалось создать пользователя. Не удалось установить подписку"
+                });
+            }
+
+            // Установка профиля биллинга для пользователя
+            user.BillingProfile = new BillingProfile
+            {
+                ActiveSubscriptionId = subscriptionId,
+                isFreePlan = true,
+                SubscriptionIds = new List<string> { subscriptionId }
+            };
+
+            // Обновление информации о пользователе в базе данных
             await _userManager.UpdateAsync(user);
 
-            return NoContent();
+            // Добавление пользователя в роль "USER"
+            var addUserToRole = await _userManager.AddToRoleAsync(user, "USER");
+
+            // Если добавление пользователя в роль не удалось, удаляем пользователя и возвращаем ошибку
+            if (!addUserToRole.Succeeded)
+            {
+                await _userManager.DeleteAsync(user);
+                return BadRequest(new RegisterResponse
+                {
+                    Success = false,
+                    Message =
+                        $"Не удалось добавить пользователя в роль {addUserToRole.Errors?.FirstOrDefault()?.Description}"
+                });
+            }
+
+            // Генерация токена подтверждения email
+            var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+            // Отправка email с токеном подтверждения
+            await _emailService.SendEmailAsync(
+                MailGenerator.GenerateTokenMessage(confirmToken, user.Email, LocalizationsLanguage.en));
+
+            // Возвращаем успешный ответ
+            return Ok(new RegisterResponse { Success = true, Message = "Пользователь успешно создан" });
         }
-
-        [HttpPost]
-        [Route("confirm/email")]
-        public async Task<IActionResult> ConfirmEmail(string email, string token)
+        catch (Exception ex)
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            if(user == null)
-            {
-                return NotFound("User not found");
-            }
-            if(user != null && user.EmailConfirmed)
-            {
-                return BadRequest("Users email already confirmed");
-            }
+            // Если пользователь был создан - удаляем его
+            if (user != null) await _userManager.DeleteAsync(user);
 
-            var confirmResult = await _userManager.ConfirmEmailAsync(user!, token);
-            if(confirmResult.Succeeded != true)
-            {
-                return BadRequest("Token confirmation faulted");
-            }
-
-            return Ok();
+            // Логирование ошибки и возврат сообщения об ошибке
+            _logger.LogError(ex, "Произошла ошибка при регистрации");
+            return BadRequest(new RegisterResponse { Success = false, Message = ex.Message });
         }
+    }
 
-        [HttpPost]
-        [Route("resend")]
-        public async Task<IActionResult> ResendConfirmationToken(string email)
+
+    /// <summary>
+    /// Метод для обработки запроса на вход в систему.
+    /// </summary>
+    /// <param name="login">Объект, содержащий email и пароль пользователя.</param>
+    /// <returns>Ответ с токенами доступа и обновления, если вход успешен, или сообщение об ошибке.</returns>
+    [HttpPost]
+    [Route("login")]
+    [ProducesResponseType(typeof(LoginResponse), (int)HttpStatusCode.OK)]
+    public async Task<IActionResult> Login([FromBody] LoginRequest login)
+    {
+        try
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            // Поиск пользователя по email
+            var user = await _userManager.FindByEmailAsync(login.Email);
             if (user == null)
             {
-                return NotFound("User not found");
+                // Если пользователь не найден, возвращаем ошибку
+                return BadRequest(new LoginResponse
+                {
+                    Success = false, Message = "Пользователь не существует", Code = AuthErrorCode.UserNotExists
+                });
             }
-            if (user != null && user.EmailConfirmed)
+
+            // Проверка пароля пользователя
+            if (!await _userManager.CheckPasswordAsync(user, login.Password))
             {
-                return BadRequest("Users email already confirmed");
+                // Если пароль неверен, возвращаем ошибку
+                return BadRequest(new LoginResponse
+                    { Success = false, Message = "Неверный пароль", Code = AuthErrorCode.PasswordIncorrect });
             }
 
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user!);
-            _emailService.SendEmail(MailGenerator.GenerateTokenMessage(token, email, LocalizationsLanguage.en));
-            return Ok();
+            // Создание объекта principal для пользователя
+            var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
 
+            // Получение данных запроса
+            var request = _context.HttpContext!.Request;
+
+            // Формируем издателя токена
+            var issuer = $"{request.Scheme}://{request.Host.Value}";
+
+            // Генерация токена доступа
+            var token = _jwtService.GenerateAccessToken(principal, issuer);
+
+            // Генерация токена обновления и времени его истечения
+            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken();
+
+            // Устанавливаем новый токен обновления для пользователя
+            user.RefreshToken = refreshToken;
+
+            // Устанавливаем время истечения токена обновления
+            user.RefreshTokenExpiryTime = DateTime.Now.Add(refreshTokenExpiryTime);
+
+            // Обновляем информацию о пользователе в базе данных
+            await _userManager.UpdateAsync(user);
+
+            // Возвращаем успешный ответ с токенами и информацией о пользователе
+            return Ok(new LoginResponse
+            {
+                AccessToken = token,
+                RefreshToken = refreshToken,
+                Message = "Вход выполнен успешно",
+                Email = user.Email,
+                Success = true,
+                UserId = user.Id,
+                RefreshTokenExpiryTime = (int)refreshTokenExpiryTime.TotalDays
+            });
         }
-
-        [NonAction]
-        private async Task<RegisterResponse> RegisterAsync(RegisterRequest register)
+        catch (Exception ex)
         {
-            try
-            {
-                var userExist = await _userManager.FindByEmailAsync(register.Email);
-                if (userExist != null)
-                {
-                    return new RegisterResponse { Success = false, Message = "User already exist" };
-                }
-
-                userExist = new ApplicationUser
-                {
-                    Email = register.Email,
-                    UserName = register.Email,
-                    ConcurrencyStamp = Guid.NewGuid().ToString()
-                };
-
-                var createUserResult = await _userManager.CreateAsync(userExist, register.Password);
-
-                if (!createUserResult.Succeeded)
-                {
-                    var user = await _userManager.FindByEmailAsync(userExist.Email);
-                    if(user != null)
-                    {
-                        await _userManager.DeleteAsync(user);
-                    }
-                    return new RegisterResponse { Success = false, 
-                                                  Message = $"Create user failed {createUserResult?.Errors?.FirstOrDefault()?.Description}",
-                                                  Code = Enum.Parse<AuthErrorCode>(createUserResult?.Errors?.FirstOrDefault()?.Code ?? "")};
-                }
-
-                var userForToken = await _userManager.FindByEmailAsync(userExist.Email);
-
-                var subscriptionId = await SetFreeSubscription(register.Email);
-
-                if (subscriptionId == null)
-                {
-                    var user = await _userManager.FindByEmailAsync(userExist.Email);
-                    await _userManager.DeleteAsync(user);
-                    return new RegisterResponse { Success = false, Message = $"Create user failed. Can not set subscription" };
-                }
-
-                userExist.BillingProfile = new BillingProfile { ActiveSubscriptionId = subscriptionId, isFreePlan = true, SubscriptionIds = new List<string> { subscriptionId } };
-                await _userManager.UpdateAsync(userExist);
-
-                
-                var addUserToRole = await _userManager.AddToRoleAsync(userExist, "USER");
-
-                if (!addUserToRole.Succeeded)
-                {
-                    var user = await _userManager.FindByEmailAsync(userExist.Email);
-                    await _userManager.DeleteAsync(user);
-                    return new RegisterResponse { Success = false, Message = $"Could not add user to role {addUserToRole?.Errors?.FirstOrDefault()?.Description}" };
-                }
-
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(userExist);
-                _emailService.SendEmail(MailGenerator.GenerateTokenMessage(token, userExist.Email, LocalizationsLanguage.en));
-
-                return new RegisterResponse { Success = true, Message = "User created successfully" };
-            }
-            catch(Exception ex)
-            {
-                _logger.LogError($"An error occurred while register: {ex}");
-                var user = await _userManager.FindByEmailAsync(register.Email);
-                if(user != null)
-                {
-                    await _userManager.DeleteAsync(user);
-                }
-                return new RegisterResponse { Success = false, Message = ex.Message };
-            }
+            // Логирование ошибки и возврат сообщения об ошибке
+            _logger.LogError(ex, "Произошла ошибка при входе в систему");
+            return BadRequest(new LoginResponse { Success = false, Message = ex.Message });
         }
+    }
 
 
-        [NonAction]
-        private async Task<string?> SetFreeSubscription(string email)
+    /// <summary>
+    /// Метод для обновления токена доступа.
+    /// </summary>
+    /// <param name="tokenModel">Объект, содержащий текущие токены доступа и обновления.</param>
+    /// <returns>Обновленные токены доступа и обновления, если запрос успешен, или сообщение об ошибке.</returns>
+    [HttpPost]
+    [Route("refresh")]
+    public async Task<IActionResult> RefreshToken(TokenModel tokenModel)
+    {
+        try
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            var accessToken = await GenerateAccessToken(user);
+            // Получение данных запроса
+            var request = _context.HttpContext!.Request;
 
-            _context.HttpContext!.Request.Headers.Add("Authorization", $"Bearer {new JwtSecurityTokenHandler().WriteToken(accessToken)}");
+            // Формируем издателя токена
+            var issuer = $"{request.Scheme}://{request.Host.Value}";
 
-            var subscriptionId = await _subscriptionService.SetFreeSubscription(user.Id.ToString());
-           
-            return subscriptionId;
-        }
+            // Получение principal из истекшего токена доступа
+            var principal = _jwtService.GetPrincipalFromExpiredToken(tokenModel.AccessToken, issuer);
 
-        [NonAction]
-        private async Task<LoginResponse> LoginAsync(LoginRequest login)
-        {
-            try
+            // Поиск пользователя по имени из principal
+            var user = await _userManager.FindByNameAsync(principal.Identity!.Name!);
+
+            // Проверка валидности пользователя и токенов
+            if (user == null || user.RefreshToken != tokenModel.RefreshToken ||
+                user.RefreshTokenExpiryTime <= DateTime.Now)
             {
-                var user = await _userManager.FindByEmailAsync(login.Email);
-                if (user == null)
+                // Если пользователь не найден или токены недействительны, возвращаем ошибку
+                return BadRequest(new RefreshResponse
                 {
-                    return new LoginResponse { Success = false, Message = "User not exists", Code = AuthErrorCode.UserNotExists};
-                }
-
-                if(!await _userManager.CheckPasswordAsync(user, login.Password))
-                {
-                    return new LoginResponse { Success = false, Message = "Password incorrect", Code = AuthErrorCode.PasswordIncorrect };
-                }
-
-
-                var token = await GenerateAccessToken(user);
-                var refreshToken = GenerateRefreshToken();
-
-                user.RefreshToken = refreshToken;
-                var expirationTime = DateTime.Now.AddDays(_jwtConfig.RefreshTokenValidityInDays);
-                user.RefreshTokenExpiryTime = expirationTime;
-
-                await _userManager.UpdateAsync(user);
-                return new LoginResponse
-                {
-                    AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
-                    RefreshToken = refreshToken,
-                    Message = "Login Success",
-                    Email = user.Email,
-                    Success = true,
-                    UserId = user.Id.ToString(),
-                    RefreshTokenExpiryTime = _jwtConfig.RefreshTokenValidityInDays,
-                };
+                    Success = false,
+                    Message = "Неверный токен доступа или токен обновления"
+                });
             }
-            catch (Exception ex)
+
+            // Генерация нового токена доступа
+            var accessToken = _jwtService.GenerateAccessToken(principal, issuer);
+
+            // Генерация нового токена обновления и времени его истечения
+            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken();
+
+            // Устанавливаем новый токен обновления для пользователя
+            user.RefreshToken = refreshToken;
+
+            // Устанавливаем время истечения токена обновления
+            user.RefreshTokenExpiryTime = DateTime.Now.Add(refreshTokenExpiryTime);
+
+            // Обновляем информацию о пользователе в базе данных
+            await _userManager.UpdateAsync(user);
+
+            // Возвращаем обновленные токены
+            return Ok(new RefreshResponse
             {
-                _logger.LogError($"An error occurred while login: {ex}");
-                return new LoginResponse { Success = false, Message = ex.Message };
-            }
+                Success = true,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                RefreshTokenExpiryTime = (int)refreshTokenExpiryTime.TotalDays
+            });
         }
-
-        [NonAction]
-        private static string GenerateRefreshToken()
+        catch (Exception ex)
         {
-            var randomNumber = new byte[64];
-            using var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(randomNumber);
-            return Convert.ToBase64String(randomNumber);
+            // Логирование ошибки и возврат сообщения об ошибке
+            _logger.LogError(ex, "Произошла ошибка при обновлении токена");
+            return BadRequest("Неверный запрос клиента");
         }
+    }
 
-        [NonAction]
-        private async Task<JwtSecurityToken> GenerateAccessToken(ApplicationUser user)
+
+    /// <summary>
+    /// Метод для проверки существования пользователя по email.
+    /// </summary>
+    /// <param name="email">Email пользователя.</param>
+    /// <returns>Ответ с информацией о статусе email.</returns>
+    [HttpGet]
+    [Route("check")]
+    public async Task<ActionResult<CheckEmailResponse>> CheckUserByEmail(string email)
+    {
+        // Поиск пользователя по email
+        var user = await _userManager.FindByEmailAsync(email);
+
+        // Если пользователь не найден, возвращаем статус "NotFound"
+        if (user == null)
         {
-            var claims = new List<Claim>
-                {
-                    new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Name, user.UserName),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                };
-
-            var roles = await _userManager.GetRolesAsync(user);
-            var roleClaims = roles.Select(r => new Claim(ClaimTypes.Role, r));
-            claims.AddRange(roleClaims);
-            var expires = DateTime.Now.AddHours(3);
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfig.IssuerSigningKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var token = new JwtSecurityToken(issuer: _jwtConfig.ValidIssuer,
-                audience: _jwtConfig.ValidAudiences.Split(",").FirstOrDefault(),
-                claims: claims,
-                expires: expires,
-                signingCredentials: creds);
-
-            return token;
+            return Ok(new CheckEmailResponse { EmailStatus = EmailStatus.NotFound });
         }
 
-        [NonAction]
-        private ClaimsPrincipal? GetPrincipalFromExpiredToken(string? token)
+        // Возвращаем статус email в зависимости от того, подтвержден ли он
+        return Ok(user.EmailConfirmed == false
+            ? new CheckEmailResponse { EmailStatus = EmailStatus.NotConfirmed }
+            : new CheckEmailResponse { EmailStatus = EmailStatus.Created });
+    }
+
+    /// <summary>
+    /// Метод для отзыва токена обновления у текущего пользователя.
+    /// </summary>
+    /// <returns>Ответ без содержимого, если операция успешна, или сообщение об ошибке.</returns>
+    [Authorize]
+    [HttpPost]
+    [Route("revoke")]
+    public async Task<IActionResult> Revoke()
+    {
+        // Получение имени текущего пользователя из контекста запроса
+        var username = HttpContext.User.Identity!.Name;
+
+        // Поиск пользователя по имени
+        var user = await _userManager.FindByNameAsync(username);
+
+        // Если пользователь не найден, возвращаем ошибку
+        if (user == null)
         {
-            _tokenValidationParameters.ValidateLifetime = false;
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            try
-            {
-                var principal = tokenHandler.ValidateToken(token, _tokenValidationParameters, out var securityToken);
-                if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-                    throw new SecurityTokenException("Invalid token");
-
-                return principal;
-            }
-            catch(ArgumentException ex)
-            {
-                _logger.LogError($"An error occurred while GetPrincipalFromExpiredToken: {ex}");
-                throw new SecurityTokenException("Invalid token");
-            }
+            return BadRequest("Пользователь не существует");
         }
+
+        // Отзыв токена обновления
+        user.RefreshToken = null;
+
+        // Обновление информации о пользователе в базе данных
+        await _userManager.UpdateAsync(user);
+
+        // Возвращаем ответ без содержимого
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Метод для подтверждения email пользователя.
+    /// </summary>
+    /// <param name="email">Email пользователя.</param>
+    /// <param name="token">Токен подтверждения email.</param>
+    /// <returns>Ответ с сообщением об успешном подтверждении или сообщение об ошибке.</returns>
+    [HttpPost]
+    [Route("confirm/email")]
+    public async Task<IActionResult> ConfirmEmail(string email, string token)
+    {
+        // Поиск пользователя по email
+        var user = await _userManager.FindByEmailAsync(email);
+
+        // Если пользователь не найден, возвращаем ошибку
+        if (user == null)
+        {
+            return NotFound("Пользователь не найден");
+        }
+
+        // Если email уже подтвержден, возвращаем ошибку
+        if (user.EmailConfirmed)
+        {
+            return BadRequest("Email пользователя уже подтвержден");
+        }
+
+        // Подтверждение email пользователя с использованием токена
+        var confirmResult = await _userManager.ConfirmEmailAsync(user, token);
+
+        // Если подтверждение не удалось, возвращаем ошибку
+        if (confirmResult.Succeeded != true)
+        {
+            return BadRequest("Ошибка подтверждения токена");
+        }
+
+        // Возвращаем успешный ответ
+        return Ok();
+    }
+
+    /// <summary>
+    /// Метод для повторной отправки токена подтверждения email.
+    /// </summary>
+    /// <param name="email">Email пользователя.</param>
+    /// <returns>Ответ с сообщением об успешной отправке или сообщение об ошибке.</returns>
+    [HttpPost]
+    [Route("resend")]
+    public async Task<IActionResult> ResendConfirmationToken(string email)
+    {
+        // Поиск пользователя по email
+        var user = await _userManager.FindByEmailAsync(email);
+
+        // Если пользователь не найден, возвращаем ошибку
+        if (user == null)
+        {
+            return NotFound("Пользователь не найден");
+        }
+
+        // Проверка, подтвержден ли уже email пользователя
+        if (user.EmailConfirmed)
+        {
+            // Если email уже подтвержден, возвращаем ошибку
+            return BadRequest("Email пользователя уже подтвержден");
+        }
+
+        // Генерация нового токена подтверждения email
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+        // Отправка email с новым токеном подтверждения
+        await _emailService.SendEmailAsync(MailGenerator.GenerateTokenMessage(token, email, LocalizationsLanguage.en));
+
+        // Возвращаем успешный ответ
+        return Ok();
     }
 }

@@ -1,11 +1,12 @@
 ﻿using System.Text.Json.Serialization;
+using AuthService.Configuration;
 
-namespace AuthService.Models
+namespace AuthService.Models.ClientConfiguration
 {
-    public class Config
+    public class ClientConfig
     {
         [JsonPropertyName("endpoints")]
-        public EndpointsConfig? Endpoints { get; set; }
+        public ClientEndpointsConfig? Endpoints { get; set; }
 
         [JsonPropertyName("settings")]
         public SettingsConfig? Settings { get; set; }

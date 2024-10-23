@@ -2,7 +2,6 @@
 using DomainObjects.Pregnancy;
 using DomainObjects.Pregnancy.UserProfile;
 using IdentityLibrary;
-using IdentityLibrary.Models;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;

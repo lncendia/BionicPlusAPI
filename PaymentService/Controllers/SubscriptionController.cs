@@ -1,6 +1,4 @@
-﻿using DomainObjects.Pregnancy.Localizations;
-using DomainObjects.Pregnancy;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using PaymentService.Services.Interfaces;

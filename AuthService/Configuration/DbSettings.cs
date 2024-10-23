@@ -1,4 +1,4 @@
-﻿namespace AuthService.Infrastructure
+﻿namespace AuthService.Configuration
 {
     public class DbSettings
     {

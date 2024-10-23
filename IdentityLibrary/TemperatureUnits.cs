@@ -1,4 +1,4 @@
-﻿namespace IdentityLibrary.Models
+﻿namespace IdentityLibrary
 {
     public enum TemperatureUnits
     {
