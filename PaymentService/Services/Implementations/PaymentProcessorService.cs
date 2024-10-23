@@ -2,8 +2,7 @@
 using IdentityLibrary.Models;
 using Microsoft.AspNetCore.Identity;
 using PaymentService.Services.Interfaces;
-using System.Security.Claims;
-using PaymentService.Models.Emails;
+using IdentityLibrary;
 
 namespace PaymentService.Services.Implementations
 {
@@ -73,36 +72,35 @@ namespace PaymentService.Services.Implementations
 
                 await _subscriptionService.SetSubscription(userId, planId, subscriptionId);
 
-                if (isFirst)
+                if (!isFirst) return true;
+                
+                //Recurrent notification about pay
+                _mailService.PlanMountlyPaymentNotificationMail(userEmail, userId, subscription.ExpirationDate, plan.Price.ToString(), plan.Name);
+
+                if (plan == null)
                 {
-                    //Recurrent notification about pay
-                    _mailService.PlanMountlyPaymentNotificationMail(userEmail, userId, subscription.ExpirationDate, plan.Price.ToString(), plan.Name);
+                    throw new ArgumentException($"Plan with id {planId} not found");
+                }
+                var isMountly = plan.BillingPeriod == BillingPeriod.m;
 
-                    if (plan == null)
-                    {
-                        throw new ArgumentException($"Plan with id {planId} not found");
-                    }
-                    var isMountly = plan.BillingPeriod == DomainObjects.Subscription.BillingPeriod.m;
+                //Recurring charge
+                if (isMountly)
+                {
+                    _chargeService.PlanMountlyCharge(userId, planId, invoiceId);
+                }
+                else
+                {
+                    _chargeService.PlanYearlyCharge(userId, planId, invoiceId);
+                }
 
-                    //Recurring charge
-                    if (isMountly)
-                    {
-                        _chargeService.PlanMountlyCharge(userId, planId, invoiceId);
-                    }
-                    else
-                    {
-                        _chargeService.PlanYearlyCharge(userId, planId, invoiceId);
-                    }
-
-                    //Recurring usage
-                    if (isMountly)
-                    {
-                        _usageService.PlanMountlyRefill(userId, planId);
-                    }
-                    else
-                    {
-                        _usageService.PlanYearlyRefill(userId, planId);
-                    }
+                //Recurring usage
+                if (isMountly)
+                {
+                    _usageService.PlanMountlyRefill(userId, planId);
+                }
+                else
+                {
+                    _usageService.PlanYearlyRefill(userId, planId);
                 }
 
                 return true;

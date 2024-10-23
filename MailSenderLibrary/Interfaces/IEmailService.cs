@@ -1,9 +1,8 @@
 ﻿using MailSenderLibrary.Models;
 
-namespace MailSenderLibrary.Interfaces
+namespace MailSenderLibrary.Interfaces;
+
+public interface IEmailService
 {
-    public interface IEmailService
-    {
-        Task SendEmail(EmailMessage message);
-    }
+    Task SendEmailAsync(EmailMessage message);
 }

@@ -1,12 +1,12 @@
 ﻿using DomainObjects.Pregnancy.UserProfile;
 using DomainObjects.Subscription;
-using IdentityLibrary.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using PaymentService.Models;
 using PaymentService.Services.Interfaces;
 using System.Text;
 using System.Text.Json;
+using IdentityLibrary;
 
 namespace PaymentService.Services.Implementations
 {

@@ -1,12 +1,11 @@
-﻿using MailSenderLibrary.Models;
-using PaymentService.Models.Emails;
+using MailSenderLibrary.Models;
 
 namespace PaymentService.Services.Interfaces
 {
-    public interface IRobokassaMailService
-    {
-        Task SendRecurrentPaymentEmail(RecurrentPaymentEmailModel paymentModel);
-        Task SendSuccessPaymentEmail(SuccessPaymentEmailModel paymentEmailModel);
-        Task SendFailPaymentEmail(FailedPaymentEmailModel failedPaymentEmailModel);
-    }
+
+public interface IRobokassaMailService
+{
+    Task SendRecurrentPaymentEmail(RecurrentPaymentEmailModel paymentModel);
+    Task SendSuccessPaymentEmail(SuccessPaymentEmailModel paymentEmailModel);
+    Task SendFailPaymentEmail(FailedPaymentEmailModel failedPaymentEmailModel);
 }

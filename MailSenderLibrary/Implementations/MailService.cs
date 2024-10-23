@@ -1,7 +1,6 @@
 ﻿using MailKit.Net.Smtp;
 using MailSenderLibrary.Interfaces;
 using MailSenderLibrary.Models;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
@@ -10,20 +9,17 @@ namespace MailSenderLibrary.Implementations
     public class MailService : IEmailService
     {
         private readonly EmailConfiguration _emailConfig;
-        private readonly ILogger<MailService> _logger;
-        
         private const string FromName = "Baby Tips";
 
-        public MailService(IOptions<EmailConfiguration> emailConfig, ILogger<MailService> logger)
+        public MailService(IOptions<EmailConfiguration> emailConfig)
         {
             _emailConfig = emailConfig.Value;
-            _logger = logger;
         }
-        
-        public async Task SendEmail(EmailMessage message)
+
+        public async Task SendEmailAsync(EmailMessage message)
         {
             var emailMessage = CreateEmailMessage(message);
-            await Send(emailMessage);
+            await SendAsync(emailMessage);
         }
 
         private MimeMessage CreateEmailMessage(EmailMessage message)
@@ -41,21 +37,13 @@ namespace MailSenderLibrary.Implementations
             return emailMessage;
         }
 
-        private async Task Send(MimeMessage message)
+        private async Task SendAsync(MimeMessage message)
         {
             using var smtpClient = new SmtpClient();
-            try
-            {
-                await smtpClient.ConnectAsync(_emailConfig.SmtpServer, _emailConfig.Port, true);
-                smtpClient.AuthenticationMechanisms.Remove("XOAUTH2");
-                await smtpClient.AuthenticateAsync(_emailConfig.Username, _emailConfig.Password);
-
-                await smtpClient.SendAsync(message);
-            }
-            catch(Exception ex)
-            {
-                _logger.LogError($"Error sending email: {ex.Message}");
-            }
+            await smtpClient.ConnectAsync(_emailConfig.SmtpServer, _emailConfig.Port, true);
+            smtpClient.AuthenticationMechanisms.Remove("XOAUTH2");
+            await smtpClient.AuthenticateAsync(_emailConfig.Username, _emailConfig.Password);
+            await smtpClient.SendAsync(message);
         }
     }
 }

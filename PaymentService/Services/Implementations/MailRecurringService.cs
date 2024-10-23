@@ -1,6 +1,4 @@
 ﻿using Hangfire;
-using System.Net.Mail;
-using PaymentService.Models.Emails;
 
 namespace PaymentService.Services.Implementations
 {

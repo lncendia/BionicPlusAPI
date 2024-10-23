@@ -1,5 +1,3 @@
-version: '3.4'
-
 services:
   authservice:
     image: ${DOCKER_REGISTRY-}authservice
@@ -7,17 +5,20 @@ services:
       context: .
       dockerfile: AuthService/Dockerfile
     container_name: authservice
-    ports:
-      - "8081:8081"
     environment:
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8081
+      - ASPNETCORE_URLS=http://+:8080
       - DBSETTINGS__NAME=Identity
-      - DBSETTINGS__CONNECTIONSTRING=mongodb+srv://${INPUT_MONGO_DB_CREDS}@${INPUT_MONGO_DB_CLUSTER}/?retryWrites=true&w=majority
+      - DBSETTINGS__CONNECTIONSTRING=mongodb://${INPUT_MONGO_DB_CREDS}@${INPUT_MONGO_DB_CLUSTER}/?retryWrites=true
       - JWTCONFIG__ISSUERSIGNINGKEY=${INPUT_JWT_ISSUER_SIGNING_KEY}
-      - JWTCONFIG__VALIDISSUER=${INPUT_LOGIN_HOST}
-      - JWTCONFIG__VALIDAUDIENCES=${INPUT_LOGIN_HOST},${INPUT_API_HOST},${INPUT_PAYMENT_HOST}
+      - JWTCONFIG__ISSUEDAUDIENCES=${INPUT_AUTH_AUDIENCE},${INPUT_API_AUDIENCE},${INPUT_PAYMENT_AUDIENCE}
+      - JWTCONFIG__VALIDISSUER=${INPUT_VALID_ISSUER}
+      - JWTCONFIG__VALIDAUDIENCES=${INPUT_AUTH_AUDIENCE}
       - JWTCONFIG__REFRESHTOKENVALIDITYINDAYS=30
+      - REVERSEPROXYCONFIG__LOGINPROXY=${INPUT_LOGIN_PROXY}
+      - REVERSEPROXYCONFIG__APIPROXY=${INPUT_API_PROXY}
+      - REVERSEPROXYCONFIG__PAYMENTPROXY=${INPUT_PAYMENT_PROXY}
       - ENDPOINTSCONFIG__CHECKACCOUNTURL=${INPUT_LOGIN_HOST}/api/v1/authenticate/check
       - ENDPOINTSCONFIG__LOGINURL=${INPUT_LOGIN_HOST}/api/v1/authenticate/login
       - ENDPOINTSCONFIG__REGISTERURL=${INPUT_LOGIN_HOST}/api/v1/authenticate/register
@@ -50,10 +51,11 @@ services:
       - ENDPOINTSCONFIG__PROMOCODEURL=${INPUT_PAYMENT_HOST}/api/Subscription/promocode
       - ENDPOINTSCONFIG__CALCULATEPRICEURL=${INPUT_PAYMENT_HOST}/api/Subscription/price/calculate
       - SETTINGSCONFIG__CAPTCHAKEY=${INPUT_CAPTCHA_KEY}
+      - SETTINGSCONFIG__CAPTCHASECRET=${INPUT_CAPTCHA_SECRET}
       - SETTINGSCONFIG__GOOGLECLIENTID=${INPUT_GOOGLE_CLIENT_ID}
       - PAYMENTCONFIG__INTERCEPTURL=auth.robokassa.ru/Merchant/State
-      - EMAILCONFIGURATION__FROM=no-reply@babytips.me
-      - EMAILCONFIGURATION__SMTPSERVER=email-smtp.us-east-1.amazonaws.com
+      - EMAILCONFIGURATION__FROM=sergeizahargood@gmail.com
+      - EMAILCONFIGURATION__SMTPSERVER=smtp.gmail.com
       - EMAILCONFIGURATION__PORT=465
       - EMAILCONFIGURATION__USERNAME=${INPUT_SMTP_USER}
       - EMAILCONFIGURATION__PASSWORD=${INPUT_SMTP_PASSWORD}
@@ -64,16 +66,15 @@ services:
       context: .
       dockerfile: BionicPlusAPI/BionicPlusAPI/Dockerfile
     container_name: bionicplusapi
-    ports:
-      - "8082:8082"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8082
+      - ASPNETCORE_URLS=http://+:8080
+      - REVERSEPROXYCONFIG__APIPROXY=${INPUT_API_PROXY}
       - DBSETTINGS__NAME=MainDb
-      - DBSETTINGS__CONNECTIONSTRING=mongodb+srv://${INPUT_MONGO_DB_CREDS}@${INPUT_MONGO_DB_CLUSTER}/?retryWrites=true&w=majority
+      - DBSETTINGS__CONNECTIONSTRING=mongodb://${INPUT_MONGO_DB_CREDS}@${INPUT_MONGO_DB_CLUSTER}/?retryWrites=true
       - JWTCONFIG__ISSUERSIGNINGKEY=${INPUT_JWT_ISSUER_SIGNING_KEY}
-      - JWTCONFIG__VALIDISSUER=${INPUT_LOGIN_HOST}
-      - JWTCONFIG__VALIDAUDIENCES=${INPUT_LOGIN_HOST},${INPUT_API_HOST},${INPUT_PAYMENT_HOST}
+      - JWTCONFIG__VALIDISSUER=${INPUT_VALID_ISSUER}
+      - JWTCONFIG__VALIDAUDIENCES=${INPUT_API_AUDIENCE}
       - ENDPOINTSCONFIG__PAYMENTSERVICEURL=${INPUT_PAYMENT_HOST}
       - AWS__ACCESSKEY=${INPUT_AWS_ACCESS_KEY_ID}
       - AWS__SECRETKEY=${INPUT_AWS_SECRET_ACCESS_KEY}
@@ -86,17 +87,16 @@ services:
       context: .
       dockerfile: PaymentService/Dockerfile
     container_name: paymentservice
-    ports:
-      - "8083:8083"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8083
+      - ASPNETCORE_URLS=http://+:8080
+      - REVERSEPROXYCONFIG__PAYMENTPROXY=${INPUT_PAYMENT_PROXY}
       - JWTCONFIG__ISSUERSIGNINGKEY=${INPUT_JWT_ISSUER_SIGNING_KEY}
-      - JWTCONFIG__VALIDISSUER=${INPUT_LOGIN_HOST}
-      - JWTCONFIG__VALIDAUDIENCES=${INPUT_LOGIN_HOST},${INPUT_API_HOST},${INPUT_PAYMENT_HOST}
+      - JWTCONFIG__VALIDISSUER=${INPUT_VALID_ISSUER}
+      - JWTCONFIG__VALIDAUDIENCES=${INPUT_PAYMENT_AUDIENCE}
       - DBSETTINGS__NAME=MainDb
       - DBSETTINGS__IDENTITYNAME=Identity
-      - DBSETTINGS__CONNECTIONSTRING=mongodb+srv://${INPUT_MONGO_DB_CREDS}@${INPUT_MONGO_DB_CLUSTER}/?retryWrites=true&w=majority
+      - DBSETTINGS__CONNECTIONSTRING=mongodb://${INPUT_MONGO_DB_CREDS}@${INPUT_MONGO_DB_CLUSTER}/?retryWrites=true
       - PLANSCONFIGURATION__FREEPLANID=${INPUT_FREE_PLAN_ID}
       - ALLOWEDIPS__ADRESSES=${INPUT_ALLOWED_IPS}
       - EMAILCONFIGURATION__FROM=no-reply@babytips.me
@@ -107,3 +107,33 @@ services:
       - ENDPOINTSCONFIG__AUTHSERVICEURL=${INPUT_LOGIN_HOST}
       - MERCHANTINFO__PASSWORD1=${INPUT_MERCHANT_PASS1}
       - MERCHANTINFO__PASSWORD2=${INPUT_MERCHANT_PASS2}
+        
+  nginx:
+    image: nginx:latest
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ${APPDATA}/ASP.NET/https:/https:ro
+    depends_on:
+      - authservice
+      - bionicplusapi
+      - paymentservice
+  
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: Buk7op
+      MONGO_INITDB_ROOT_PASSWORD: Hadofo42
+  
+  mongo-express:
+    image: mongo-express:latest
+    ports:
+      - "8085:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: Buk7op
+      ME_CONFIG_MONGODB_ADMINPASSWORD: Hadofo42
+      ME_CONFIG_MONGODB_URL: mongodb://Buk7op:Hadofo42@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false

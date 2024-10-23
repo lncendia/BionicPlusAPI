@@ -9,5 +9,8 @@ namespace AuthService.Dtos
 
         [Required, DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
+        
+        [Required]
+        public string Captcha { get; set; } = string.Empty;
     }
 }
