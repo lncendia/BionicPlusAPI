@@ -2,35 +2,45 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using AuthService.Models.ClientConfiguration;
+using ClientConfig = AuthService.Models.ClientConfiguration.ClientConfig;
 
 namespace AuthService.Controllers;
 
+/// <summary>
+/// Контроллер для управления конфигурацией клиента
+/// </summary>
 [Route("api/[controller]")]
 [ApiController]
 public class ConfigController : Controller
 {
-    private readonly EndpointsConfig _endpointConfig;
-    private readonly SettingsConfig _settingsConfig;
-    private readonly PaymentConfig _paymentConfig;
-    private readonly ReverseProxyConfig _reverseProxyConfig;
+    /// <summary>
+    /// Приватное поле для хранения конфигурации клиента
+    /// </summary>
+    private readonly ClientConfig _clientConfig;
 
+    /// <summary>
+    /// Конструктор контроллера конфигурации
+    /// </summary>
+    /// <param name="endpointConfig">Конфигурация конечных точек</param>
+    /// <param name="settingsConfig">Конфигурация настроек</param>
+    /// <param name="paymentConfig">Конфигурация платежей</param>
+    /// <param name="reverseProxyConfig">Конфигурация обратного прокси</param>
     public ConfigController(IOptions<EndpointsConfig> endpointConfig, IOptions<SettingsConfig> settingsConfig,
         IOptions<PaymentConfig> paymentConfig, IOptions<ReverseProxyConfig> reverseProxyConfig)
     {
-        _reverseProxyConfig = reverseProxyConfig.Value;
-        _endpointConfig = endpointConfig.Value;
-        _settingsConfig = settingsConfig.Value;
-        _paymentConfig = paymentConfig.Value;
+        // Инициализируем конфигурацию клиента
+        _clientConfig = new ClientConfig
+        {
+            Endpoints = new ClientEndpointsConfig(endpointConfig.Value, reverseProxyConfig.Value),
+            Settings = new ClientSettingsConfig(settingsConfig.Value),
+            Payment = paymentConfig.Value
+        };
     }
 
+    /// <summary>
+    /// Получает конфигурацию клиента
+    /// </summary>
+    /// <returns>Конфигурация клиента</returns>
     [HttpGet("", Name = "GetConfig")]
-    public ActionResult<ClientConfig> GetConfig()
-    {
-        return Ok(new ClientConfig
-        {
-            Endpoints = new ClientEndpointsConfig(_endpointConfig, _reverseProxyConfig),
-            Settings = _settingsConfig,
-            Payment = _paymentConfig
-        });
-    }
+    public ActionResult<ClientConfig> GetConfig() => Ok(_clientConfig);
 }

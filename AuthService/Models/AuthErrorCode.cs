@@ -12,5 +12,6 @@ namespace AuthService.Models
         UserNotExists = 5,
         PasswordMismatch = 6,
         InvalidToken = 7,
+        CaptchaNotPassed = 8,
     }
 }

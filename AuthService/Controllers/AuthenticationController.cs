@@ -35,6 +35,11 @@ public class AuthenticationController : ControllerBase
     /// Сервис для работы с JWT токенами.
     /// </summary>
     private readonly IJwtService _jwtService;
+    
+    /// <summary>
+    /// Сервис валидации капчи.
+    /// </summary>
+    private readonly ICaptchaValidator _captchaValidator;
 
     /// <summary>
     /// Фабрика для создания объектов ClaimsPrincipal.
@@ -66,6 +71,7 @@ public class AuthenticationController : ControllerBase
     /// <param name="logger">Логгер для логирования событий.</param>
     /// <param name="jwtService">Сервис для работы с JWT токенами.</param>
     /// <param name="userClaimsPrincipalFactory">Фабрика для создания объектов ClaimsPrincipal.</param>
+    /// <param name="captchaValidator">Сервис валидации капчи.</param>
     public AuthenticationController(
         UserManager<ApplicationUser> userManager,
         IEmailService emailService,
@@ -73,7 +79,8 @@ public class AuthenticationController : ControllerBase
         IHttpContextAccessor httpContextAccessor,
         ILogger<AuthenticationController> logger,
         IJwtService jwtService,
-        IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory)
+        IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory, 
+        ICaptchaValidator captchaValidator)
     {
         _userManager = userManager;
         _emailService = emailService;
@@ -81,22 +88,37 @@ public class AuthenticationController : ControllerBase
         _logger = logger;
         _jwtService = jwtService;
         _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
+        _captchaValidator = captchaValidator;
         _context = httpContextAccessor;
     }
 
     /// <summary>
     /// Метод для запроса на восстановление пароля.
     /// </summary>
-    /// <param name="email">Email пользователя.</param>
+    /// <param name="req">Объект, содержащий email и токен капчи.</param>
     /// <returns>Ответ с сообщением об успешной отправке или сообщение об ошибке.</returns>
     [HttpPost]
-    [Route("forgot/password/{email}")]
-    public async Task<IActionResult> ForgotPassword(string email)
+    [Route("forgot/password/")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest req)
     {
         try
         {
+            // Проверка капчи
+            var isCaptchaValid = await _captchaValidator.Validate(req.Captcha);
+
+            // Если капча не пройдена, возвращаем ошибку
+            if (!isCaptchaValid)
+            {
+                return BadRequest(new RegisterResponse
+                { 
+                    Success = false,
+                    Message = "Captcha was not validated",
+                    Code = AuthErrorCode.CaptchaNotPassed
+                });
+            }
+            
             // Поиск пользователя по email
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await _userManager.FindByEmailAsync(req.Email);
 
             // Генерация токена для сброса пароля
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -191,10 +213,25 @@ public class AuthenticationController : ControllerBase
     [ProducesResponseType(typeof(RegisterResponse), (int)HttpStatusCode.OK)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest register)
     {
+        // Создаем переменную для хранения пользователя
         ApplicationUser? user = null;
 
         try
         {
+            // Проверка капчи
+            var isCaptchaValid = await _captchaValidator.Validate(register.Captcha);
+
+            // Если капча не пройдена, возвращаем ошибку
+            if (!isCaptchaValid)
+            {
+                return BadRequest(new RegisterResponse
+                {
+                    Success = false,
+                    Message = "Captcha was not validated",
+                    Code = AuthErrorCode.CaptchaNotPassed
+                });
+            }
+            
             // Поиск пользователя по email
             user = await _userManager.FindByEmailAsync(register.Email);
 

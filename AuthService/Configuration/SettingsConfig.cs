@@ -9,4 +9,8 @@ public class SettingsConfig
 
     [JsonPropertyName("googleClientId")]
     public string GoogleClientId { get; set; } = string.Empty;
+    
+    [JsonPropertyName("captchaSecret")]
+    public string CaptchaSecret { get; set; } = string.Empty;
+
 }
