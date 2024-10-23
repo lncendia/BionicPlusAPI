@@ -3,6 +3,7 @@ using IdentityLibrary.Models;
 using Microsoft.AspNetCore.Identity;
 using PaymentService.Services.Interfaces;
 using System.Security.Claims;
+using PaymentService.Models.Emails;
 
 namespace PaymentService.Services.Implementations
 {
@@ -58,7 +59,15 @@ namespace PaymentService.Services.Implementations
 
                 var plan = await _planService.GetPlan(planId);
 
-                _robokassaMailService.SendSuccessPaymentEmail(userEmail, subscription.CreationDate, subscription.ExpirationDate, plan.Name);
+                var successEmail = new SuccessPaymentEmailModel()
+                {
+                    Email = userEmail,
+                    SubStartDate = subscription.CreationDate,
+                    SubEndDate = subscription.ExpirationDate,
+                    SubName = plan.Name
+                };
+                
+                await _robokassaMailService.SendSuccessPaymentEmail(successEmail);
 
                 await _subscriptionService.ActivateSubscription(subscriptionId);
 

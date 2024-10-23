@@ -1,11 +1,12 @@
 ﻿using MailSenderLibrary.Models;
+using PaymentService.Models.Emails;
 
 namespace PaymentService.Services.Interfaces
 {
     public interface IRobokassaMailService
     {
-        void SendRecurrentPaymentEmail(string mailAddress, DateTime nextSubDate, string sum, string subName);
-        void SendSuccessPaymentEmail(string mailAddress, DateTime subStartDate, DateTime subEndDate, string subName);
-        void SendFailPaymentEmail(string mailAddress);
+        Task SendRecurrentPaymentEmail(RecurrentPaymentEmailModel paymentModel);
+        Task SendSuccessPaymentEmail(SuccessPaymentEmailModel paymentEmailModel);
+        Task SendFailPaymentEmail(FailedPaymentEmailModel failedPaymentEmailModel);
     }
 }
