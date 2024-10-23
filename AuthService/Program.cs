@@ -7,11 +7,9 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System.Text.Json.Serialization;
 using AuthService.Extensions;
-using IdentityLibrary;
 using NLog.Web;
 using MailSenderLibrary.Interfaces;
 using MailSenderLibrary.Implementations;
-using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +38,8 @@ builder.Services.AddProblemDetails(ProblemDetailsConfigurator.Configure);
 
 builder.Services.AddHttpClient<ISubscriptionService, SubscriptionService>()
     .AddHttpMessageHandler<CurrentRequestBearerTokenProvider>();
+
+builder.Services.AddHttpClient<ICaptchaValidator, CaptchaValidator>();
 
 builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));

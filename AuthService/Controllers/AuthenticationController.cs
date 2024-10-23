@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Security.Claims;
 using IdentityLibrary;
-using IdentityLibrary.Models;
 
 namespace AuthService.Controllers;
 
@@ -72,6 +71,7 @@ public class AuthenticationController : ControllerBase
     /// <param name="logger">Логгер для логирования событий.</param>
     /// <param name="jwtService">Сервис для работы с JWT токенами.</param>
     /// <param name="userClaimsPrincipalFactory">Фабрика для создания объектов ClaimsPrincipal.</param>
+    /// <param name="captchaValidator">Сервис валидации капчи.</param>
     public AuthenticationController(
         UserManager<ApplicationUser> userManager,
         IEmailService emailService,
@@ -79,7 +79,8 @@ public class AuthenticationController : ControllerBase
         IHttpContextAccessor httpContextAccessor,
         ILogger<AuthenticationController> logger,
         IJwtService jwtService,
-        IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory, ICaptchaValidator captchaValidator)
+        IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory, 
+        ICaptchaValidator captchaValidator)
     {
         _userManager = userManager;
         _emailService = emailService;
@@ -94,11 +95,11 @@ public class AuthenticationController : ControllerBase
     /// <summary>
     /// Метод для запроса на восстановление пароля.
     /// </summary>
-    /// <param name="email">Email пользователя.</param>
+    /// <param name="req">Объект, содержащий email и токен капчи.</param>
     /// <returns>Ответ с сообщением об успешной отправке или сообщение об ошибке.</returns>
     [HttpPost]
-    [Route("forgot/password/{email}")]
-    public async Task<IActionResult> ForgotPassword(string email)
+    [Route("forgot/password/")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest req)
     {
         try
         {
@@ -117,7 +118,7 @@ public class AuthenticationController : ControllerBase
             }
             
             // Поиск пользователя по email
-            var user = await _userManager.FindByEmailAsync(email);
+            var user = await _userManager.FindByEmailAsync(req.Email);
 
             // Генерация токена для сброса пароля
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -212,6 +213,7 @@ public class AuthenticationController : ControllerBase
     [ProducesResponseType(typeof(RegisterResponse), (int)HttpStatusCode.OK)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest register)
     {
+        // Создаем переменную для хранения пользователя
         ApplicationUser? user = null;
 
         try
@@ -222,7 +224,12 @@ public class AuthenticationController : ControllerBase
             // Если капча не пройдена, возвращаем ошибку
             if (!isCaptchaValid)
             {
-                return new RegisterResponse { Success = false, Message = "Captcha was not validated", Code = AuthErrorCode.CaptchaNotPassed };
+                return BadRequest(new RegisterResponse
+                {
+                    Success = false,
+                    Message = "Captcha was not validated",
+                    Code = AuthErrorCode.CaptchaNotPassed
+                });
             }
             
             // Поиск пользователя по email

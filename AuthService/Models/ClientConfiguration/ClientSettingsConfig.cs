@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Serialization;
+using AuthService.Configuration;
 
-namespace AuthService.Models;
+namespace AuthService.Models.ClientConfiguration;
 
 public class ClientSettingsConfig
 {

@@ -1,4 +1,5 @@
 ﻿using System.Web;
+using AuthService.Configuration;
 using AuthService.Dtos;
 using AuthService.Infrastructure;
 using AuthService.Models;
@@ -22,8 +23,6 @@ public class CaptchaValidator: ICaptchaValidator
     
     public async Task<bool> Validate(string captchaToken)
     {
-        using var client = new HttpClient();
-
         try
         {
             var query = HttpUtility.ParseQueryString(string.Empty);
