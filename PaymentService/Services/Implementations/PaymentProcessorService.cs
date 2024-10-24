@@ -43,7 +43,7 @@ namespace PaymentService.Services.Implementations
             {
                 var subscription = await _subscriptionService.GetSubscription(subscriptionId);
 
-                if(subscription.Status == SubscriptionStatus.ACTIVE)
+                if(subscription.Status == SubscriptionStatus.Active)
                 {
                     return true;
                 }
