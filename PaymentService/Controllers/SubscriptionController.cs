@@ -12,10 +12,12 @@ namespace PaymentService.Controllers
     public class SubscriptionController : Controller
     {
         private readonly ISubscriptionService _subscriptionService;
-
-        public SubscriptionController(ISubscriptionService subscriptionService)
+        private readonly IUserService _userService;
+        
+        public SubscriptionController(ISubscriptionService subscriptionService, IUserService userService)
         {
             _subscriptionService = subscriptionService;
+            _userService = userService;
         }
 
         [HttpPost(Name = "SetFreeSubscription")]
@@ -51,7 +53,9 @@ namespace PaymentService.Controllers
         {
             var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
             var subscriptionId = await _subscriptionService.SetFreeSubscription(userId, true, false);
-            return Ok();
+            var result = await _userService.SetSubscription(userId, subscriptionId, isFreePlan: true);
+            
+            return Ok(result);
         }
     }
 }

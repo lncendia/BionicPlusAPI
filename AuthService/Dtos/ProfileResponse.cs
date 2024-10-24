@@ -1,7 +1,6 @@
 ﻿using AuthService.Models;
 using DomainObjects.Pregnancy;
 using IdentityLibrary;
-using IdentityLibrary.Models;
 using System.Text.Json.Serialization;
 
 namespace AuthService.Dtos

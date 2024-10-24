@@ -7,9 +7,11 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System.Text.Json.Serialization;
 using AuthService.Extensions;
+using IdentityLibrary;
 using NLog.Web;
 using MailSenderLibrary.Interfaces;
 using MailSenderLibrary.Implementations;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,12 +56,13 @@ builder.Host.UseNLog();
 
 var app = builder.Build();
 
-// using (var scope = app.Services.CreateScope())
-// {
-//     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
-//     var appRole = new ApplicationRole { Name = "USER" };
-//     await roleManager.CreateAsync(appRole);
-// }
+/*
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+    var appRole = new ApplicationRole { Name = "USER" };
+    await roleManager.CreateAsync(appRole);
+} */
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

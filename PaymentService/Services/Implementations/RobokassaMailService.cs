@@ -24,7 +24,7 @@ namespace PaymentService.Services.Implementations
         public async Task SendRecurrentPaymentEmail(RecurrentPaymentEmailModel recurrentPaymentEmailModel)
         {
             var emailContent = GeneratePaymentMessage(recurrentPaymentEmailModel);
-            await _mailService.SendEmail(emailContent);
+            await _mailService.SendEmailAsync(emailContent);
         }
 
         [Queue("emails")]
@@ -32,14 +32,14 @@ namespace PaymentService.Services.Implementations
         {
             var emailContent = GeneratePaymentMessage(successPaymentEmailModel);
             
-            await _mailService.SendEmail(emailContent);
+            await _mailService.SendEmailAsync(emailContent);
         }
 
         [Queue("emails")]
         public async Task SendFailPaymentEmail(FailedPaymentEmailModel failedPaymentEmailModel)
         {
             var emailContent = GeneratePaymentMessage(failedPaymentEmailModel);
-            await _mailService.SendEmail(emailContent);
+            await _mailService.SendEmailAsync(emailContent);
         }
 
         private EmailMessage GeneratePaymentMessage(PaymentEmailModel model)

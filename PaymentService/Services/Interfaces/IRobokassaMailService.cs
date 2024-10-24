@@ -1,7 +1,6 @@
-using MailSenderLibrary.Models;
+using PaymentService.Models.Emails;
 
-namespace PaymentService.Services.Interfaces
-{
+namespace PaymentService.Services.Interfaces;
 
 public interface IRobokassaMailService
 {

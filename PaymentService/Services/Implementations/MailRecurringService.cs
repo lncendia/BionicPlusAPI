@@ -1,13 +1,14 @@
 ﻿using Hangfire;
+using PaymentService.Models.Emails;
 
 namespace PaymentService.Services.Implementations
 {
     public class MailRecurringService 
     {
-        private const string MOUNTHLY_PREFIX = "MounthlyEmailJob";
-        private const string YEARLY_PREFIX = "YearlyEmailJob";
+        private const string MonthlyPrefix = "MounthlyEmailJob";
+        private const string YearlyPrefix = "YearlyEmailJob";
 
-        public void PlanMountlyPaymentNotificationMail(string emailAddress, string userId, DateTime nextSubDate, string sum, string subName)
+        public void PlanMonthlyPaymentNotificationMail(string emailAddress, string userId, DateTime nextSubDate, string sum, string subName)
         {
             var utcNow = DateTime.UtcNow.AddDays(-14);
 
@@ -20,20 +21,20 @@ namespace PaymentService.Services.Implementations
                 Email = emailAddress,
                 NextSubDate = nextSubDate,
                 Sum = sum,
-                SubName = subName,
+                SubName = subName
             };
             
-            RecurringJob.AddOrUpdate<RobokassaMailService>($"{MOUNTHLY_PREFIX}_{userId}", x => x.SendRecurrentPaymentEmail(sendRecurrentEmail), Cron.Monthly(day, hours, minutes));
+            RecurringJob.AddOrUpdate<RobokassaMailService>($"{MonthlyPrefix}_{userId}", x => x.SendRecurrentPaymentEmail(sendRecurrentEmail), Cron.Monthly(day, hours, minutes));
         }
 
         public void CancelMounthlyJob(string jobId)
         {
-            RecurringJob.RemoveIfExists($"{MOUNTHLY_PREFIX}_{jobId}");
+            RecurringJob.RemoveIfExists($"{MonthlyPrefix}_{jobId}");
         }
 
         public void CancelYearlyJob(string jobId)
         {
-            RecurringJob.RemoveIfExists($"{YEARLY_PREFIX}_{jobId}");
+            RecurringJob.RemoveIfExists($"{YearlyPrefix}_{jobId}");
         }
     }
 }

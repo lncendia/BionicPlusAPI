@@ -11,6 +11,7 @@ using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using PaymentService.Services.Providers;
 using PaymentService.Extensions;
+using PaymentService.Middlewares;
 
 BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeSerializer(MongoDB.Bson.BsonType.String));
@@ -42,8 +43,6 @@ builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IRecurrentServiceManager, RecurrentServiceManager>();
-                
-
 
 builder.Services.AddControllers();
 
@@ -68,19 +67,9 @@ app.UseCors("corsapp");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseHangfireDashboard("/hangfire/dashboard", new DashboardOptions
-{
-    //IsReadOnlyFunc = (DashboardContext context) => true,
-    Authorization = new[]
-    {
-        new HangfireCustomBasicAuthenticationFilter
-        {
-            User = "admin",
-            Pass = "admin"
-        },
-    },
-    DisplayStorageConnectionString = false,
-});
+
+app.CreateHangfireDashboard(builder.Configuration);
+
 app.UseProblemDetails();
 
 app.Run();

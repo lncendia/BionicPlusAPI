@@ -5,7 +5,6 @@ using PaymentService.Models;
 using PaymentService.Services.Interfaces;
 using SubscriptionDBMongoAccessor;
 using SubscriptionDBMongoAccessor.Infrastracture;
-using System;
 
 namespace PaymentService.Services.Implementations
 {
@@ -45,7 +44,7 @@ namespace PaymentService.Services.Implementations
                 await _dbAccessor.SetUsage(userId, freePlanId);
             }
 
-            var subscriptionId = await _dbAccessor.SetFreeSubscription(userId, freePlanId);
+            var subscriptionId = await _dbAccessor.SetFreeSubscription(freePlanId);
 
             return subscriptionId;
         }

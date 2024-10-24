@@ -56,10 +56,8 @@ namespace SubscriptionDBMongoAccessor
             {
                 throw new NotFoundException($"free plan not found id = {freePlanId}");
             }
-
             
             var creationDate = DateTime.UtcNow;
-
 
             var subscription = new MongoSubscription
             {

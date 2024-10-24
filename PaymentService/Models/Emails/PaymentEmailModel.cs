@@ -7,7 +7,7 @@ namespace PaymentService.Models.Emails;
 /// </summary>
 public class PaymentEmailModel
 {
-    public string Email { get; set; } = string.Empty;   
-    public LocalizationsLanguage Language { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public LocalizationsLanguage Language { get; } = LocalizationsLanguage.ru;
     public string CancelSubscription { get; set; } = "https://web.babytips.me/billing/pricing"; 
 }

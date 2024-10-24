@@ -6,15 +6,16 @@ namespace PaymentService.Services.Implementations
 {
     public class UsageRecurringService
     {
-        private const string MOUNTHLY_PREFIX = "MounthlyUsageJob";
-        private const string YEARLY_PREFIX = "YearlyUsageJob";
+        private const string MonthlyPrefix = "MounthlyUsageJob";
+        private const string YearlyPrefix = "YearlyUsageJob";
         private readonly ILogger<UsageRecurringService> _logger;
 
         public UsageRecurringService(ILogger<UsageRecurringService> logger)
         {
             _logger = logger;
         }
-        public void PlanMountlyRefill(string userId, string planId)
+        
+        public void PlanMonthlyRefill(string userId, string planId)
         {
             var utcNow = DateTime.UtcNow;
 
@@ -22,7 +23,7 @@ namespace PaymentService.Services.Implementations
             var hours = utcNow.Hour;
             var minutes = utcNow.Minute;
 
-            RecurringJob.AddOrUpdate<ISubscriptionService>($"{MOUNTHLY_PREFIX}_{userId}", x => x.InsureSubscription(userId, planId), Cron.Monthly(day, hours, minutes));
+            RecurringJob.AddOrUpdate<ISubscriptionService>($"{MonthlyPrefix}_{userId}", x => x.InsureSubscription(userId, planId), Cron.Monthly(day, hours, minutes));
         }
 
         public void PlanYearlyRefill(string userId, string planId)
@@ -33,40 +34,25 @@ namespace PaymentService.Services.Implementations
             var hours = utcNow.Hour;
             var minutes = utcNow.Minute;
 
-            RecurringJob.AddOrUpdate<ISubscriptionService>($"{YEARLY_PREFIX}_{userId}", x => x.InsureSubscription(userId, planId), Cron.Yearly(day, hours, minutes));
+            RecurringJob.AddOrUpdate<ISubscriptionService>($"{YearlyPrefix}_{userId}", x => x.InsureSubscription(userId, planId), Cron.Yearly(day, hours, minutes));
         }
 
-        public bool FindJobById(string userId, bool isMountly)
+        public bool FindJobById(string userId, bool isMonthly)
         {
-            using (IStorageConnection connection = JobStorage.Current.GetConnection())
-            {
-                JobData? job = default;
-                if (isMountly)
-                {
-                    job = connection.GetJobData($"{MOUNTHLY_PREFIX}_{userId}");
-                }
-                else
-                {
-                    job = connection.GetJobData($"{YEARLY_PREFIX}_{userId}");
-                }
+            using var connection = JobStorage.Current.GetConnection();
+            var job = connection.GetJobData(isMonthly ? $"{MonthlyPrefix}_{userId}" : $"{YearlyPrefix}_{userId}");
 
-                if (job == null)
-                {
-                    return false;
-                }
-
-                return true;
-            }
+            return job != null;
         }
 
-        public void CancelMounthlyJob(string userId)
+        public void CancelMonthlyJob(string userId)
         {
-            RecurringJob.RemoveIfExists($"{MOUNTHLY_PREFIX}_{userId}");
+            RecurringJob.RemoveIfExists($"{MonthlyPrefix}_{userId}");
         }
 
         public void CancelYearlyJob(string userId)
         {
-            RecurringJob.RemoveIfExists($"{YEARLY_PREFIX}_{userId}");
+            RecurringJob.RemoveIfExists($"{YearlyPrefix}_{userId}");
         }
     }
 }

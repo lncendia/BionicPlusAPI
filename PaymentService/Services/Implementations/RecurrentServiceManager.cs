@@ -17,9 +17,9 @@ namespace PaymentService.Services.Implementations
 
         public bool CancelAllRecurrentJobByUserId(string userId)
         {
-            _chargeService.CancelMounthlyJob(userId);
+            _chargeService.CancelMonthlyJob(userId);
             _mailService.CancelMounthlyJob(userId);
-            _usageService.CancelMounthlyJob(userId);
+            _usageService.CancelMonthlyJob(userId);
 
             _chargeService.CancelYearlyJob(userId);
             _mailService.CancelYearlyJob(userId);
