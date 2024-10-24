@@ -47,7 +47,7 @@ namespace SubscriptionDBMongoAccessor
         }
 
 
-        public async Task<string> SetFreeSubscription(string userId, string freePlanId)
+        public async Task<string> SetFreeSubscription(string freePlanId)
         {
             var filter = Builders<MongoPlan>.Filter.Where(p => p.Id == freePlanId);
             var plan = (await _plansCollection.FindAsync(filter)).FirstOrDefault();
