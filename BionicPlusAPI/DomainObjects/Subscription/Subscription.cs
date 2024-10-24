@@ -46,5 +46,8 @@ namespace DomainObjects.Subscription
         [JsonPropertyName("promocode")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Promocode { get; set; }
+        
+        [JsonIgnore]
+        public DateTime CancellationTime { get; set; }
     }
 }

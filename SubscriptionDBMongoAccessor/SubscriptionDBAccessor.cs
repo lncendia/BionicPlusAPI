@@ -8,11 +8,12 @@ namespace SubscriptionDBMongoAccessor
 {
     public class SubscriptionDBAccessor
     {
-        private const string DB_NAME = "Subscription";
-        private const string PLANS_COLLECTION_NAME = "Plans";
-        private const string USAGES_COLLECTION_NAME = "Usages";
-        private const string SUBSCRIPTIONS_COLLECTION_NAME = "Subscriptions";
-        private const string PROMOCODE_COLLECTION_NAME = "Promocodes";
+        private const string DbName = "Subscription";
+        private const string PlansCollectionName = "Plans";
+        private const string UsagesCollectionName = "Usages";
+        private const string SubscriptionsCollectionName = "Subscriptions";
+        private const string PromocodeCollectionName = "Promocodes";
+        private static readonly TimeSpan CancellationTimeWaiting = TimeSpan.FromMinutes(2);
 
         private readonly IMongoCollection<MongoPlan> _plansCollection;
         private readonly IMongoCollection<MongoUsage> _usageCollection;
@@ -22,14 +23,14 @@ namespace SubscriptionDBMongoAccessor
         public SubscriptionDBAccessor(DbSettings dbSettings)
         {
             var client = new MongoClient(dbSettings.ConnectionString);
-            var db = client.GetDatabase(DB_NAME);
-            _plansCollection = db.GetCollection<MongoPlan>(PLANS_COLLECTION_NAME);
-            _usageCollection = db.GetCollection<MongoUsage>(USAGES_COLLECTION_NAME);
-            _subscriptionsCollection = db.GetCollection<MongoSubscription>(SUBSCRIPTIONS_COLLECTION_NAME);
-            _promocodeCollection = db.GetCollection<MongoPromocode>(PROMOCODE_COLLECTION_NAME);
+            var db = client.GetDatabase(DbName);
+            _plansCollection = db.GetCollection<MongoPlan>(PlansCollectionName);
+            _usageCollection = db.GetCollection<MongoUsage>(UsagesCollectionName);
+            _subscriptionsCollection = db.GetCollection<MongoSubscription>(SubscriptionsCollectionName);
+            _promocodeCollection = db.GetCollection<MongoPromocode>(PromocodeCollectionName);
             // CreateFreePlan();
-        }
-
+        } 
+        
         public void CreateFreePlan()
         {
             var plan = new MongoPlan()
@@ -63,7 +64,7 @@ namespace SubscriptionDBMongoAccessor
             {
                 CreationDate = creationDate,
                 ExpirationDate = GetExpirationDateFromNow(plan, creationDate),
-                Status = SubscriptionStatus.ACTIVE,
+                Status = SubscriptionStatus.Active,
                 InvoiceId = 0,
                 isRecurrent = true,
                 Limits = plan.Limits,
@@ -71,7 +72,8 @@ namespace SubscriptionDBMongoAccessor
                 Promocode = null,
                 Currency = plan.Currency,
                 Discount = default,
-                Total = 0
+                Total = 0,
+                CancellationTime = GetCancellationTime()
             };
 
             await _subscriptionsCollection.InsertOneAsync(subscription);
@@ -97,7 +99,7 @@ namespace SubscriptionDBMongoAccessor
             {
                 CreationDate = creationDate,
                 ExpirationDate = GetExpirationDateFromNow(plan, creationDate),
-                Status = SubscriptionStatus.PENDING,
+                Status = SubscriptionStatus.Pending,
                 InvoiceId = int.Parse(invoiceId),
                 isRecurrent = true,
                 Limits = plan.Limits,
@@ -117,7 +119,7 @@ namespace SubscriptionDBMongoAccessor
         {
             var filter = Builders<MongoSubscription>.Filter.Where(p => p.Id == subscriptionId);
 
-            var newSubscription = Builders<MongoSubscription>.Update.Set(u => u.Status, SubscriptionStatus.ACTIVE);
+            var newSubscription = Builders<MongoSubscription>.Update.Set(u => u.Status, SubscriptionStatus.Active);
 
             var updateResult = await _subscriptionsCollection.FindOneAndUpdateAsync(filter, newSubscription);
 
@@ -128,7 +130,7 @@ namespace SubscriptionDBMongoAccessor
         {
             var filter = Builders<MongoSubscription>.Filter.Where(p => p.Id == subscriptionId);
 
-            var newSubscription = Builders<MongoSubscription>.Update.Set(u => u.Status, SubscriptionStatus.INACTIVE);
+            var newSubscription = Builders<MongoSubscription>.Update.Set(u => u.Status, SubscriptionStatus.Inactive);
 
             var updateResult = await _subscriptionsCollection.FindOneAndUpdateAsync(filter, newSubscription);
 
@@ -232,17 +234,18 @@ namespace SubscriptionDBMongoAccessor
 
         private DateTime GetExpirationDateFromNow(MongoPlan plan, DateTime creationDate)
         {
-            switch (plan.BillingPeriod)
+            return plan.BillingPeriod switch
             {
-                case DomainObjects.Subscription.BillingPeriod.d:
-                    return creationDate.AddDays(plan.BillingUnit);
-                case DomainObjects.Subscription.BillingPeriod.m:
-                    return creationDate.AddMonths(plan.BillingUnit);
-                case DomainObjects.Subscription.BillingPeriod.y:
-                    return creationDate.AddYears(plan.BillingUnit);
-                default:
-                    return creationDate.AddMonths(1);
-            }
+                BillingPeriod.d => creationDate.AddDays(plan.BillingUnit),
+                BillingPeriod.m => creationDate.AddMonths(plan.BillingUnit),
+                BillingPeriod.y => creationDate.AddYears(plan.BillingUnit),
+                _ => creationDate.AddMonths(1)
+            };
+        }
+
+        private DateTime GetCancellationTime()
+        {
+            return DateTime.Now + CancellationTimeWaiting;
         }
 
         private void ApplySale(MongoPlan plan, decimal sale)

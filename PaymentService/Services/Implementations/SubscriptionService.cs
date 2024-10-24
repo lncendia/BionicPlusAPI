@@ -89,7 +89,7 @@ namespace PaymentService.Services.Implementations
             }
 
             var subscription = await GetSubscription(subId);
-            if (subscription.Status != SubscriptionStatus.ACTIVE)
+            if (subscription.Status != SubscriptionStatus.Active)
             {
                 await DeactivateSubscription(subId);
                 var freeSubID = await CreateFreeSubscription(userId, false);
