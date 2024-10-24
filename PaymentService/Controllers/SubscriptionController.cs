@@ -20,10 +20,10 @@ namespace PaymentService.Controllers
             _userService = userService;
         }
 
-        [HttpPost(Name = "SetFreeSubscription")]
+        [HttpPost(Name = "CreateFreeSubscription")]
         public async Task<ActionResult<string>> SetFreeSubscription([FromQuery, Required] string userId)
         {
-            var subscriptionId = await _subscriptionService.SetFreeSubscription(userId, true);
+            var subscriptionId = await _subscriptionService.CreateFreeSubscription(userId, true);
             return Ok(subscriptionId);
         }
 
@@ -52,7 +52,7 @@ namespace PaymentService.Controllers
         public async Task<IActionResult> CancelUserSubscription()
         {
             var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var subscriptionId = await _subscriptionService.SetFreeSubscription(userId, true, false);
+            var subscriptionId = await _subscriptionService.CreateFreeSubscription(userId, true, false);
             var result = await _userService.SetSubscription(userId, subscriptionId, isFreePlan: true);
             
             return Ok(result);

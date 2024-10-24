@@ -29,7 +29,7 @@ namespace PaymentService.Services.Implementations
             return subscription;
         }
 
-        public async Task<string> SetFreeSubscription(string userId, bool setupUsage, bool discardUsage = true)
+        public async Task<string> CreateFreeSubscription(string userId, bool setupUsage, bool discardUsage = true)
         {
             var freePlanId = _plans.FreePlanId;
 
@@ -61,6 +61,7 @@ namespace PaymentService.Services.Implementations
         public async Task<string> CreateSubscription(string planId, string invoiceId, string? promocode)
         {
             var subscriptionId = string.Empty;
+            
             if (promocode != null)
             {
                 var promoModel = await _dbAccessor.GetPromocode(promocode);
@@ -91,7 +92,7 @@ namespace PaymentService.Services.Implementations
             if (subscription.Status != SubscriptionStatus.ACTIVE)
             {
                 await DeactivateSubscription(subId);
-                var freeSubID = await SetFreeSubscription(userId, false);
+                var freeSubID = await CreateFreeSubscription(userId, false);
                 await _userService.SetSubscription(userId, freeSubID, true);
             }
         }

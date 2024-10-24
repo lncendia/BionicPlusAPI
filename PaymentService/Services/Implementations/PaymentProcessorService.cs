@@ -1,15 +1,15 @@
-﻿using DomainObjects.Subscription;
-using IdentityLibrary.Models;
+﻿using System.Globalization;
+using DomainObjects.Subscription;
 using Microsoft.AspNetCore.Identity;
 using PaymentService.Services.Interfaces;
 using IdentityLibrary;
+using PaymentService.Models.Emails;
 
 namespace PaymentService.Services.Implementations
 {
     public class PaymentProcessorService
     {
         private readonly MailRecurringService _mailService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IRobokassaMailService _robokassaMailService;
         private readonly ISubscriptionService _subscriptionService;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -19,7 +19,6 @@ namespace PaymentService.Services.Implementations
         private readonly ILogger<PaymentProcessorService> _logger;
 
         public PaymentProcessorService(MailRecurringService mailRecurringService,
-            IHttpContextAccessor httpContextAccessor,
             IRobokassaMailService robokassaMailService,
             ISubscriptionService subscriptionService,
             UserManager<ApplicationUser> userManager,
@@ -29,7 +28,6 @@ namespace PaymentService.Services.Implementations
             ILogger<PaymentProcessorService> logger)
         {
             _mailService = mailRecurringService;
-            _httpContextAccessor = httpContextAccessor;
             _robokassaMailService = robokassaMailService;
             _subscriptionService = subscriptionService;
             _userManager = userManager;
@@ -75,16 +73,17 @@ namespace PaymentService.Services.Implementations
                 if (!isFirst) return true;
                 
                 //Recurrent notification about pay
-                _mailService.PlanMountlyPaymentNotificationMail(userEmail, userId, subscription.ExpirationDate, plan.Price.ToString(), plan.Name);
+                _mailService.PlanMonthlyPaymentNotificationMail(userEmail, userId, subscription.ExpirationDate, plan.Price.ToString(CultureInfo.InvariantCulture), plan.Name);
 
                 if (plan == null)
                 {
                     throw new ArgumentException($"Plan with id {planId} not found");
                 }
-                var isMountly = plan.BillingPeriod == BillingPeriod.m;
+                
+                var isMonthly = plan.BillingPeriod == BillingPeriod.m;
 
                 //Recurring charge
-                if (isMountly)
+                if (isMonthly)
                 {
                     _chargeService.PlanMountlyCharge(userId, planId, invoiceId);
                 }
@@ -94,9 +93,9 @@ namespace PaymentService.Services.Implementations
                 }
 
                 //Recurring usage
-                if (isMountly)
+                if (isMonthly)
                 {
-                    _usageService.PlanMountlyRefill(userId, planId);
+                    _usageService.PlanMonthlyRefill(userId, planId);
                 }
                 else
                 {
