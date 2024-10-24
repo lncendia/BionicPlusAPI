@@ -8,11 +8,11 @@ namespace SubscriptionDBMongoAccessor
 {
     public class SubscriptionDBAccessor
     {
-        private const string DB_NAME = "Subscription";
-        private const string PLANS_COLLECTION_NAME = "Plans";
-        private const string USAGES_COLLECTION_NAME = "Usages";
-        private const string SUBSCRIPTIONS_COLLECTION_NAME = "Subscriptions";
-        private const string PROMOCODE_COLLECTION_NAME = "Promocodes";
+        private const string DbName = "Subscription";
+        private const string PlansCollectionName = "Plans";
+        private const string UsagesCollectionName = "Usages";
+        private const string SubscriptionsCollectionName = "Subscriptions";
+        private const string PromocodeCollectionName = "Promocodes";
 
         private readonly IMongoCollection<MongoPlan> _plansCollection;
         private readonly IMongoCollection<MongoUsage> _usageCollection;
@@ -22,11 +22,11 @@ namespace SubscriptionDBMongoAccessor
         public SubscriptionDBAccessor(DbSettings dbSettings)
         {
             var client = new MongoClient(dbSettings.ConnectionString);
-            var db = client.GetDatabase(DB_NAME);
-            _plansCollection = db.GetCollection<MongoPlan>(PLANS_COLLECTION_NAME);
-            _usageCollection = db.GetCollection<MongoUsage>(USAGES_COLLECTION_NAME);
-            _subscriptionsCollection = db.GetCollection<MongoSubscription>(SUBSCRIPTIONS_COLLECTION_NAME);
-            _promocodeCollection = db.GetCollection<MongoPromocode>(PROMOCODE_COLLECTION_NAME);
+            var db = client.GetDatabase(DbName);
+            _plansCollection = db.GetCollection<MongoPlan>(PlansCollectionName);
+            _usageCollection = db.GetCollection<MongoUsage>(UsagesCollectionName);
+            _subscriptionsCollection = db.GetCollection<MongoSubscription>(SubscriptionsCollectionName);
+            _promocodeCollection = db.GetCollection<MongoPromocode>(PromocodeCollectionName);
             // CreateFreePlan();
         }
 

@@ -14,7 +14,10 @@ public class ClientSettingsConfig
     
     [JsonPropertyName("captchaKey")]
     public string CaptchaKey => _baseConfig.CaptchaKey;
-
-    [JsonPropertyName("googleClientId")]
-    public string GoogleClientId => _baseConfig.GoogleClientId;
+    
+    [JsonPropertyName("googleClientIdWeb")]
+    public string GoogleClientIdWeb => _baseConfig.GoogleClientIdWeb;
+    
+    [JsonPropertyName("googleClientIdAndroid")]
+    public string GoogleClientIdAndroid => _baseConfig.GoogleClientIdAndroid;
 }

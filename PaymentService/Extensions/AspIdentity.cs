@@ -28,7 +28,7 @@ public static class AspIdentity
                 ConnectionString = configuration.GetSection("DbSettings").GetValue<string>("ConnectionString"),
 
                 // Получение имени базы данных из конфигурации
-                DatabaseName = configuration.GetSection("DbSettings").GetValue<string>("Name"),
+                DatabaseName = configuration.GetSection("DbSettings").GetValue<string>("Name")
             },
 
             // Настройки опций Identity

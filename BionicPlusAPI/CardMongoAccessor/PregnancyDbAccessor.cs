@@ -14,13 +14,11 @@ namespace PregnancyDBMongoAccessor
 {
     public class PregnancyDbAccessor
     {
-        private const string DB_NAME = "Pregnancy";
-        private const string CARDS_COLLECTION_NAME = "Cards";
-        private const string SURVEYS_COLLECTION_NAME = "Surveys";
-        private const string PREGNANCYS_COLLECTION_NAME = "Pregnancies";
-        private const string CHILDREN_COLLECTION_NAME = "Children";
-        private readonly MongoClient _client;
-        private readonly IMongoDatabase _db;
+        private const string DbName = "Pregnancy";
+        private const string CardsCollectionName = "Cards";
+        private const string SurveysCollectionName = "Surveys";
+        private const string PregnancysCollectionName = "Pregnancies";
+        private const string ChildrenCollectionName = "Children";
         private readonly IMongoCollection<MongoCard> _cardsCollection;
         private readonly IMongoCollection<MongoSurvey> _surveysCollection;
         private readonly IMongoCollection<MongoPregnancy> _pregnancyCollection;
@@ -28,12 +26,12 @@ namespace PregnancyDBMongoAccessor
 
         public PregnancyDbAccessor(DbSettings dbSettings)
         {
-            _client = new MongoClient(dbSettings.ConnectionString);
-            _db = _client.GetDatabase(DB_NAME);
-            _cardsCollection = _db.GetCollection<MongoCard>(CARDS_COLLECTION_NAME);
-            _surveysCollection = _db.GetCollection<MongoSurvey>(SURVEYS_COLLECTION_NAME);
-            _pregnancyCollection = _db.GetCollection<MongoPregnancy>(PREGNANCYS_COLLECTION_NAME);
-            _childrenCollection = _db.GetCollection<MongoChild>(CHILDREN_COLLECTION_NAME);
+            var client = new MongoClient(dbSettings.ConnectionString);
+            var db = client.GetDatabase(DbName);
+            _cardsCollection = db.GetCollection<MongoCard>(CardsCollectionName);
+            _surveysCollection = db.GetCollection<MongoSurvey>(SurveysCollectionName);
+            _pregnancyCollection = db.GetCollection<MongoPregnancy>(PregnancysCollectionName);
+            _childrenCollection = db.GetCollection<MongoChild>(ChildrenCollectionName);
         }
 
         #region Cards

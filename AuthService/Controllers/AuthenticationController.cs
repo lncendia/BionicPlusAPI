@@ -35,7 +35,7 @@ public class AuthenticationController : ControllerBase
     /// Сервис для работы с JWT токенами.
     /// </summary>
     private readonly IJwtService _jwtService;
-    
+
     /// <summary>
     /// Сервис валидации капчи.
     /// </summary>
@@ -50,6 +50,11 @@ public class AuthenticationController : ControllerBase
     /// Сервис для управления подписками.
     /// </summary>
     private readonly ISubscriptionService _subscriptionService;
+
+    /// <summary>
+    /// Сервис управления внешними OIDC-провайдерами.
+    /// </summary>
+    private readonly IExternalOidcManager _externalOidcManager;
 
     /// <summary>
     /// Логгер для логирования событий.
@@ -72,6 +77,7 @@ public class AuthenticationController : ControllerBase
     /// <param name="jwtService">Сервис для работы с JWT токенами.</param>
     /// <param name="userClaimsPrincipalFactory">Фабрика для создания объектов ClaimsPrincipal.</param>
     /// <param name="captchaValidator">Сервис валидации капчи.</param>
+    /// <param name="externalOidcManager">Сервис управления внешними OIDC-провайдерами.</param>
     public AuthenticationController(
         UserManager<ApplicationUser> userManager,
         IEmailService emailService,
@@ -79,8 +85,9 @@ public class AuthenticationController : ControllerBase
         IHttpContextAccessor httpContextAccessor,
         ILogger<AuthenticationController> logger,
         IJwtService jwtService,
-        IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory, 
-        ICaptchaValidator captchaValidator)
+        IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory,
+        ICaptchaValidator captchaValidator,
+        IExternalOidcManager externalOidcManager)
     {
         _userManager = userManager;
         _emailService = emailService;
@@ -89,6 +96,7 @@ public class AuthenticationController : ControllerBase
         _jwtService = jwtService;
         _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
         _captchaValidator = captchaValidator;
+        _externalOidcManager = externalOidcManager;
         _context = httpContextAccessor;
     }
 
@@ -110,13 +118,13 @@ public class AuthenticationController : ControllerBase
             if (!isCaptchaValid)
             {
                 return BadRequest(new RegisterResponse
-                { 
+                {
                     Success = false,
                     Message = "Captcha was not validated",
                     Code = AuthErrorCode.CaptchaNotPassed
                 });
             }
-            
+
             // Поиск пользователя по email
             var user = await _userManager.FindByEmailAsync(req.Email);
 
@@ -219,7 +227,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             // Проверка капчи
-            var isCaptchaValid = true;//await _captchaValidator.ValidateAsync(register.Captcha);
+            var isCaptchaValid = true; //await _captchaValidator.ValidateAsync(register.Captcha);
 
             // Если капча не пройдена, возвращаем ошибку
             if (!isCaptchaValid)
@@ -231,7 +239,7 @@ public class AuthenticationController : ControllerBase
                     Code = AuthErrorCode.CaptchaNotPassed
                 });
             }
-            
+
             // Поиск пользователя по email
             user = await _userManager.FindByEmailAsync(register.Email);
 
@@ -415,6 +423,167 @@ public class AuthenticationController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Метод для обработки запроса на вход в систему.
+    /// </summary>
+    /// <param name="login">Объект, содержащий имя провайдера аутентификации и токен идентификации.</param>
+    /// <returns>Ответ с токенами доступа и обновления, если вход успешен, или сообщение об ошибке.</returns>
+    [HttpPost]
+    [Route("login/external")]
+    [ProducesResponseType(typeof(LoginResponse), (int)HttpStatusCode.OK)]
+    public async Task<IActionResult> LoginExternal([FromBody] LoginExternalRequest login)
+    {
+        // Создаем переменную для хранения пользователя
+        ApplicationUser? user = null;
+        
+        // Создаем флаг, для того чтобы понимать, новый ли это пользователь
+        var inNewUser = false;
+        
+        try
+        {
+            // Расшифровываем и проверяем токен идентификации
+            var externalInfo = await _externalOidcManager.GetLoginInfoAsync(login.Provider, login.IdentityToken);
+
+            // Пытаемся получить пользователя по логину
+            user = await _userManager.FindByLoginAsync(externalInfo.LoginProvider, externalInfo.ProviderKey);
+
+            // Если пользователь еще не зарегистрирован - устанавливаем флаг, что ему необходимо установить подписку
+            inNewUser = user == null;
+
+            // Создаем нового пользователя, если он еще не зарегистрирован
+            if (user == null)
+            {
+                // Пытаемся получить почту из утверждений, если почты нет - вызываем исключение
+                var email = externalInfo.Principal.FindFirstValue(ClaimTypes.Email);
+
+                // Если почта пользователя не найдена, возвращаем ошибку
+                if (string.IsNullOrEmpty(email))
+                {
+                    return BadRequest(new RegisterResponse
+                    {
+                        Success = false,
+                        Message = "Внешний провайдер аутентификации не предоставил почту пользователя",
+                        Code = AuthErrorCode.InvalidToken
+                    });
+                }
+
+                // Создание нового пользователя
+                user = new ApplicationUser
+                {
+                    Email = email,
+                    UserName = email,
+                    EmailConfirmed = true
+                };
+
+                // Создание пользователя в системе
+                var createUserResult = await _userManager.CreateAsync(user);
+
+                // Если создание пользователя не удалось, возвращаем ошибку
+                if (!createUserResult.Succeeded)
+                {
+                    return BadRequest(new RegisterResponse
+                    {
+                        Success = false,
+                        Message =
+                            $"Не удалось создать пользователя {createUserResult.Errors.FirstOrDefault()?.Description}",
+                        Code = Enum.Parse<AuthErrorCode>(createUserResult.Errors.FirstOrDefault()?.Code ?? "")
+                    });
+                }
+
+                // Связываем пользователя с внешним провайдером
+                await _userManager.AddLoginAsync(user, externalInfo);
+            }
+
+            // Создание объекта principal для пользователя
+            var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
+
+            // Получение данных запроса
+            var request = _context.HttpContext!.Request;
+
+            // Формируем издателя токена
+            var issuer = $"{request.Scheme}://{request.Host.Value}";
+
+            // Генерация токена доступа
+            var token = _jwtService.GenerateAccessToken(principal, issuer);
+
+            // Генерация токена обновления и времени его истечения
+            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken();
+
+            // Устанавливаем новый токен обновления для пользователя
+            user.RefreshToken = refreshToken;
+
+            // Устанавливаем время истечения токена обновления
+            user.RefreshTokenExpiryTime = DateTime.Now.Add(refreshTokenExpiryTime);
+
+            // Устанавливаем подписку, если это необходимо
+            if (inNewUser)
+            {
+                // Добавление токена доступа в заголовки запроса
+                _context.HttpContext!.Request.Headers.Add("Authorization", $"Bearer {token}");
+
+                // Установка бесплатной подписки для пользователя
+                var subscriptionId = await _subscriptionService.SetFreeSubscription(user.Id.ToString());
+
+                // Если установка подписки не удалась, удаляем пользователя и возвращаем ошибку
+                if (subscriptionId == null)
+                {
+                    await _userManager.DeleteAsync(user);
+                    return BadRequest(new RegisterResponse
+                    {
+                        Success = false,
+                        Message = "Не удалось создать пользователя. Не удалось установить подписку"
+                    });
+                }
+
+                // Установка профиля биллинга для пользователя
+                user.BillingProfile = new BillingProfile
+                {
+                    ActiveSubscriptionId = subscriptionId,
+                    isFreePlan = true,
+                    SubscriptionIds = new List<string> { subscriptionId }
+                };
+
+                // Добавление пользователя в роль "USER"
+                var addUserToRole = await _userManager.AddToRoleAsync(user, "USER");
+
+                // Если добавление пользователя в роль не удалось, удаляем пользователя и возвращаем ошибку
+                if (!addUserToRole.Succeeded)
+                {
+                    await _userManager.DeleteAsync(user);
+                    return BadRequest(new RegisterResponse
+                    {
+                        Success = false,
+                        Message =
+                            $"Не удалось добавить пользователя в роль {addUserToRole.Errors?.FirstOrDefault()?.Description}"
+                    });
+                }
+            }
+
+            // Обновляем информацию о пользователе в базе данных
+            await _userManager.UpdateAsync(user);
+
+            // Возвращаем успешный ответ с токенами и информацией о пользователе
+            return Ok(new LoginResponse
+            {
+                AccessToken = token,
+                RefreshToken = refreshToken,
+                Message = "Вход выполнен успешно",
+                Email = user.Email,
+                Success = true,
+                UserId = user.Id,
+                RefreshTokenExpiryTime = (int)refreshTokenExpiryTime.TotalDays
+            });
+        }
+        catch (Exception ex)
+        {
+            // Если пользователь был создан - удаляем его
+            if (user != null && inNewUser) await _userManager.DeleteAsync(user);
+            
+            // Логирование ошибки и возврат сообщения об ошибке
+            _logger.LogError(ex, "Произошла ошибка при входе в систему");
+            return BadRequest(new LoginResponse { Success = false, Message = ex.Message });
+        }
+    }
 
     /// <summary>
     /// Метод для обновления токена доступа.
