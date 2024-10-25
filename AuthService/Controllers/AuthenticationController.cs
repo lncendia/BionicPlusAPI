@@ -1,5 +1,4 @@
-﻿using AuthService.Dtos;
-using AuthService.Models;
+﻿using AuthService.Models;
 using AuthService.Services.Implementations;
 using AuthService.Services.Interfaces;
 using DomainObjects.Pregnancy.Localizations;
@@ -124,8 +123,7 @@ public class AuthenticationController : ControllerBase
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
             // Отправка email с токеном для сброса пароля
-            await _emailService.SendEmailAsync(
-                MailGenerator.GenerateTokenMessage(token, user.Email, LocalizationsLanguage.en));
+            await _emailService.SendEmailAsync(MailGenerator.GenerateTokenMessage(token, user.Email, LocalizationsLanguage.en));
 
             // Возвращаем успешный ответ
             return Ok();

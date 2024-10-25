@@ -45,10 +45,15 @@ public class JwtService : IJwtService, IDisposable
     /// Время жизни токена обновления.
     /// </summary>
     private readonly TimeSpan _refreshTokenLifetime;
-
-
+    
+    /// <summary>
+    /// Объект для шифрования Aes.
+    /// </summary>
     private readonly SymmetricAlgorithm _algorithm;
 
+    /// <summary>
+    /// Ключ для шифрования токена обновления.
+    /// </summary>
     private readonly byte[] _refreshTokenKey;
 
     /// <summary>
