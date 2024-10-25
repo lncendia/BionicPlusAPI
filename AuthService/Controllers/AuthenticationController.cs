@@ -219,7 +219,7 @@ public class AuthenticationController : ControllerBase
         try
         {
             // Проверка капчи
-            var isCaptchaValid = true;//await _captchaValidator.ValidateAsync(register.Captcha);
+            var isCaptchaValid = await _captchaValidator.ValidateAsync(register.Captcha);
 
             // Если капча не пройдена, возвращаем ошибку
             if (!isCaptchaValid)
@@ -266,14 +266,8 @@ public class AuthenticationController : ControllerBase
             // Создание объекта principal для пользователя
             var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
 
-            // Получение данных запроса
-            var request = _context.HttpContext!.Request;
-
-            // Формируем издателя токена
-            var issuer = $"{request.Scheme}://{request.Host.Value}";
-
             // Генерация токена доступа
-            var token = _jwtService.GenerateAccessToken(principal, issuer);
+            var token = _jwtService.GenerateAccessToken(principal);
 
             // Добавление токена доступа в заголовки запроса
             _context.HttpContext!.Request.Headers.Add("Authorization", $"Bearer {token}");
@@ -374,14 +368,8 @@ public class AuthenticationController : ControllerBase
             // Создание объекта principal для пользователя
             var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
 
-            // Получение данных запроса
-            var request = _context.HttpContext!.Request;
-
-            // Формируем издателя токена
-            var issuer = $"{request.Scheme}://{request.Host.Value}";
-
             // Генерация токена доступа
-            var token = _jwtService.GenerateAccessToken(principal, issuer);
+            var token = _jwtService.GenerateAccessToken(principal);
 
             // Генерация токена обновления и времени его истечения
             var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken();
@@ -427,14 +415,8 @@ public class AuthenticationController : ControllerBase
     {
         try
         {
-            // Получение данных запроса
-            var request = _context.HttpContext!.Request;
-
-            // Формируем издателя токена
-            var issuer = $"{request.Scheme}://{request.Host.Value}";
-
             // Получение principal из истекшего токена доступа
-            var principal = _jwtService.GetPrincipalFromExpiredToken(tokenModel.AccessToken, issuer);
+            var principal = _jwtService.GetPrincipalFromExpiredToken(tokenModel.AccessToken);
 
             // Поиск пользователя по имени из principal
             var user = await _userManager.FindByNameAsync(principal.Identity!.Name!);
@@ -452,7 +434,7 @@ public class AuthenticationController : ControllerBase
             }
 
             // Генерация нового токена доступа
-            var accessToken = _jwtService.GenerateAccessToken(principal, issuer);
+            var accessToken = _jwtService.GenerateAccessToken(principal);
 
             // Генерация нового токена обновления и времени его истечения
             var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken();

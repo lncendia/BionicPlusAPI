@@ -6,7 +6,6 @@ services:
       dockerfile: AuthService/Dockerfile
     container_name: authservice
     environment:
-      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - DBSETTINGS__NAME=Identity

@@ -11,17 +11,15 @@ public interface IJwtService
     /// Генерирует токен доступа на основе объекта ClaimsPrincipal.
     /// </summary>
     /// <param name="principal">Объект ClaimsPrincipal, содержащий информацию о пользователе.</param>
-    /// <param name="issuer">Издатель токена.</param>
     /// <returns>Строка, представляющая токен доступа.</returns>
-    string GenerateAccessToken(ClaimsPrincipal principal, string issuer);
+    string GenerateAccessToken(ClaimsPrincipal principal);
 
     /// <summary>
     /// Получает объект ClaimsPrincipal из истекшего токена.
     /// </summary>
     /// <param name="token">Истекший токен.</param>
-    /// <param name="issuer">Издатель токена.</param>
     /// <returns>Объект ClaimsPrincipal, содержащий информацию о пользователе.</returns>
-    ClaimsPrincipal GetPrincipalFromExpiredToken(string token, string issuer);
+    ClaimsPrincipal GetPrincipalFromExpiredToken(string token);
 
     /// <summary>
     /// Генерирует токен обновления и его время истечения.

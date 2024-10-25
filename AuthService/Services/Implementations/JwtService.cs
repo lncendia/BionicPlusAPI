@@ -25,6 +25,11 @@ public class JwtService : IJwtService
     /// Аудитории токена.
     /// </summary>
     private readonly string[] _audiences;
+    
+    /// <summary>
+    /// Издатель токена.
+    /// </summary>
+    private readonly string _issuer;
 
     /// <summary>
     /// Время жизни токена доступа.
@@ -45,6 +50,9 @@ public class JwtService : IJwtService
         // Устанавливаем аудиторию токена
         _audiences = jwtConfig.Value.IssuedAudiences.Split(',');
 
+        // Устанавливаем издателя токена
+        _issuer = jwtConfig.Value.ValidIssuer;
+
         // Устанавливаем время жизни токена обновления
         _refreshTokenLifetime = TimeSpan.FromDays(jwtConfig.Value.RefreshTokenValidityInDays);
 
@@ -62,7 +70,7 @@ public class JwtService : IJwtService
     /// <summary>
     /// Генерирует токен доступа на основе объекта ClaimsPrincipal.
     /// </summary>
-    public string GenerateAccessToken(ClaimsPrincipal principal, string issuer)
+    public string GenerateAccessToken(ClaimsPrincipal principal)
     {
         var claims = principal.Claims.ToList();
         claims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
@@ -70,7 +78,7 @@ public class JwtService : IJwtService
 
         // Создаем токен JWT
         var accessToken = new JwtSecurityToken(
-            issuer: issuer,
+            issuer: _issuer,
             claims: claims,
             expires: DateTime.Now.Add(_accessTokenLifetime),
             signingCredentials: _credentials
@@ -101,7 +109,7 @@ public class JwtService : IJwtService
     /// <summary>
     /// Генерирует токен обновления и его время истечения.
     /// </summary>
-    public ClaimsPrincipal GetPrincipalFromExpiredToken(string token, string issuer)
+    public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
     {
         // Настройка параметров валидации токена
         var tokenValidationParameters = new TokenValidationParameters
@@ -109,7 +117,7 @@ public class JwtService : IJwtService
             ValidateAudience = true,
             ValidAudiences = _audiences,
             ValidateIssuer = true,
-            ValidIssuer = issuer,
+            ValidIssuer = _issuer,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = _credentials.Key,
             ValidateLifetime = false // Не проверять срок действия токена
