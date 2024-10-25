@@ -30,6 +30,11 @@ public class JwtService : IJwtService, IDisposable
     /// Аудитории токена.
     /// </summary>
     private readonly string[] _audiences;
+    
+    /// <summary>
+    /// Издатель токена.
+    /// </summary>
+    private readonly string _issuer;
 
     /// <summary>
     /// Время жизни токена доступа.
@@ -55,6 +60,9 @@ public class JwtService : IJwtService, IDisposable
         // Устанавливаем аудиторию токена
         _audiences = jwtConfig.Value.IssuedAudiences.Split(',');
 
+        // Устанавливаем издателя токена
+        _issuer = jwtConfig.Value.ValidIssuer;
+
         // Устанавливаем время жизни токена обновления
         _refreshTokenLifetime = TimeSpan.FromDays(jwtConfig.Value.RefreshTokenValidityInDays);
 
@@ -78,7 +86,7 @@ public class JwtService : IJwtService, IDisposable
     /// <summary>
     /// Генерирует токен доступа на основе объекта ClaimsPrincipal.
     /// </summary>
-    public string GenerateAccessToken(ClaimsPrincipal principal, string issuer, Guid tokenId)
+    public string GenerateAccessToken(ClaimsPrincipal principal, Guid tokenId)
     {
         // Преобразуем ClaimsPrincipal в список Claims
         var claims = principal.Claims.ToList();
@@ -91,7 +99,7 @@ public class JwtService : IJwtService, IDisposable
 
         // Создаем токен JWT
         var accessToken = new JwtSecurityToken(
-            issuer: issuer,
+            issuer: _issuer,
             claims: claims,
             expires: DateTime.Now.Add(_accessTokenLifetime),
             signingCredentials: _credentials
@@ -129,7 +137,7 @@ public class JwtService : IJwtService, IDisposable
     /// <summary>
     /// Генерирует токен обновления и его время истечения.
     /// </summary>
-    public ClaimsPrincipal GetPrincipalFromExpiredToken(string token, string refreshToken, string issuer)
+    public ClaimsPrincipal GetPrincipalFromExpiredToken(string token, string refreshToken)
     {
         // Расшифровываем токен обновления
         var refreshTokenJson = Decrypt(token);
@@ -146,7 +154,7 @@ public class JwtService : IJwtService, IDisposable
             ValidateAudience = true,
             ValidAudiences = _audiences,
             ValidateIssuer = true,
-            ValidIssuer = issuer,
+            ValidIssuer = _issuer,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = _credentials.Key,
             ValidateLifetime = false

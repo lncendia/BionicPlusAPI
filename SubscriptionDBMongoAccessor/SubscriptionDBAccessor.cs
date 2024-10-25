@@ -27,6 +27,8 @@ namespace SubscriptionDBMongoAccessor
             _usageCollection = db.GetCollection<MongoUsage>(USAGES_COLLECTION_NAME);
             _subscriptionsCollection = db.GetCollection<MongoSubscription>(SUBSCRIPTIONS_COLLECTION_NAME);
             _promocodeCollection = db.GetCollection<MongoPromocode>(PROMOCODE_COLLECTION_NAME);
+            
+            // Установить при первичном запуске для инициализации бесплатной подписки
             // CreateFreePlan();
         }
 
