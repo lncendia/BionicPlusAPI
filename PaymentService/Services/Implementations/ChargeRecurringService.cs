@@ -1,5 +1,4 @@
 ﻿using Hangfire;
-using Hangfire.Storage;
 
 namespace PaymentService.Services.Implementations
 {
@@ -8,7 +7,7 @@ namespace PaymentService.Services.Implementations
         private const string MonthlyPrefix = "MounthlyChargeJob";
         private const string YearlyPrefix = "YearlyChargeJob";
 
-        public void PlanMountlyCharge(string userId, string planId, string firstInvoiceId)
+        public void PlanMonthlyCharge(string userId, string planId, string firstInvoiceId)
         {
             var utcNow = DateTime.UtcNow.AddHours(-2);
 

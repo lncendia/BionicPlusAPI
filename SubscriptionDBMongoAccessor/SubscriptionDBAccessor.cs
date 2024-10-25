@@ -107,7 +107,8 @@ namespace SubscriptionDBMongoAccessor
                 Currency = plan.Currency,
                 Promocode = promocode ?? null,
                 Discount = sale == 0 ? default : sale,
-                Total = plan.Price
+                Total = plan.Price,
+                CancellationTime = GetCancellationTime()
             };
 
             await _subscriptionsCollection.InsertOneAsync(subscription);
@@ -224,6 +225,12 @@ namespace SubscriptionDBMongoAccessor
             throw new ArgumentException($"Subscription with subscriptionId {subscriptionId} not exists");
         }
 
+        public async Task<IEnumerable<Subscription>> GetSubscriptions(SubscriptionStatus status)
+        {
+            var filter = Builders<MongoSubscription>.Filter.Eq(s => s.Status, status);
+            return (await _subscriptionsCollection.FindAsync(filter).Result.ToListAsync()).Select(s => s.Convert());
+        }
+        
         public async Task<bool> CheckInvoiceExist(int invoice)
         {
             var filter = Builders<MongoSubscription>.Filter.Where(u => u.InvoiceId == invoice);

@@ -14,13 +14,21 @@ namespace PaymentService.Services.Implementations
         private readonly PlansConfiguration _plans;
         private readonly IUserService _userService;
         private readonly IRecurrentServiceManager _recurrentServiceManager;
-
-        public SubscriptionService(IOptions<DbSettings> settings, IOptions<PlansConfiguration> plans, IUserService userService, IRecurrentServiceManager recurrentServiceManager)
+        private readonly ILogger<SubscriptionService> _logger;
+        
+        private const string CancellationJobName = "CancellationSubscriptionsJob";
+        
+        public SubscriptionService(IOptions<DbSettings> settings, IOptions<PlansConfiguration> plans,
+            IUserService userService, IRecurrentServiceManager recurrentServiceManager,
+            ILogger<SubscriptionService> logger)
         {
             _dbAccessor = new SubscriptionDBAccessor(settings.Value);
             _plans = plans.Value;
             _userService = userService;
             _recurrentServiceManager = recurrentServiceManager;
+            _logger = logger;
+            
+            RunCancellationJob();
         }
 
         public Task<Subscription> GetSubscription(string subId)
@@ -164,6 +172,26 @@ namespace PaymentService.Services.Implementations
             };
         }
 
+        private void RunCancellationJob()
+        {
+            RecurringJob.AddOrUpdate(CancellationJobName, () => CancelExpiredSubscriptions(),
+                Cron.Minutely);
+        }
+
+        public async Task CancelExpiredSubscriptions()
+        {
+            var subscriptions = await _dbAccessor.GetSubscriptions(SubscriptionStatus.Pending);
+            
+            foreach (var subscription in subscriptions)
+            {
+                if (subscription.CancellationTime <= DateTime.Now && subscription.Id != null)
+                {
+                    await _dbAccessor.SetSubscriptionStatus(subscription.Id, SubscriptionStatus.Failed);
+                    _logger.LogInformation($"Subscription {subscription.Id} has been cancelled.");
+                }
+            }
+        }
+        
         private decimal CalculateSale(BillingPromocode? promocode, Plan plan)
         {
             decimal sale = 0;

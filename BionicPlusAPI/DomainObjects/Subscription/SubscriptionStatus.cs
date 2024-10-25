@@ -11,6 +11,6 @@ namespace DomainObjects.Subscription
         Active,
         Pending,
         Inactive,
-        Cancelled
+        Failed
     }
 }

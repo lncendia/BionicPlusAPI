@@ -1,5 +1,4 @@
 using Hangfire;
-using HangfireBasicAuthenticationFilter;
 using Hellang.Middleware.ProblemDetails;
 using MailSenderLibrary.Implementations;
 using MailSenderLibrary.Interfaces;
@@ -11,7 +10,6 @@ using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using PaymentService.Services.Providers;
 using PaymentService.Extensions;
-using PaymentService.Middlewares;
 
 BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeSerializer(MongoDB.Bson.BsonType.String));
@@ -69,6 +67,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.CreateHangfireDashboard(builder.Configuration);
+app.UseHangfireServer();
 
 app.UseProblemDetails();
 
