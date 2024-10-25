@@ -1,10 +1,9 @@
-﻿namespace AuthService.Models
+﻿namespace AuthService.Models;
+
+public enum EmailStatus
 {
-    public enum EmailStatus
-    {
-        NotSet = 0,
-        NotFound = 1,
-        Created = 2,
-        NotConfirmed = 3,
-    }
+    NotSet = 0,
+    NotFound = 1,
+    Created = 2,
+    NotConfirmed = 3,
 }

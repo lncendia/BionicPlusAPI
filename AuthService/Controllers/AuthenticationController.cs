@@ -1,5 +1,4 @@
-﻿using AuthService.Dtos;
-using AuthService.Models;
+﻿using AuthService.Models;
 using AuthService.Services.Implementations;
 using AuthService.Services.Interfaces;
 using DomainObjects.Pregnancy.Localizations;
@@ -271,9 +270,9 @@ public class AuthenticationController : ControllerBase
 
             // Формируем издателя токена
             var issuer = $"{request.Scheme}://{request.Host.Value}";
-
+            
             // Генерация токена доступа
-            var token = _jwtService.GenerateAccessToken(principal, issuer);
+            var token = _jwtService.GenerateAccessToken(principal, issuer, Guid.NewGuid());
 
             // Добавление токена доступа в заголовки запроса
             _context.HttpContext!.Request.Headers.Add("Authorization", $"Bearer {token}");
@@ -380,21 +379,15 @@ public class AuthenticationController : ControllerBase
             // Формируем издателя токена
             var issuer = $"{request.Scheme}://{request.Host.Value}";
 
+            // Создаем идентификатор токена
+            var jti = Guid.NewGuid();
+            
             // Генерация токена доступа
-            var token = _jwtService.GenerateAccessToken(principal, issuer);
+            var token = _jwtService.GenerateAccessToken(principal, issuer, jti);
 
             // Генерация токена обновления и времени его истечения
-            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken();
-
-            // Устанавливаем новый токен обновления для пользователя
-            user.RefreshToken = refreshToken;
-
-            // Устанавливаем время истечения токена обновления
-            user.RefreshTokenExpiryTime = DateTime.Now.Add(refreshTokenExpiryTime);
-
-            // Обновляем информацию о пользователе в базе данных
-            await _userManager.UpdateAsync(user);
-
+            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken(jti);
+            
             // Возвращаем успешный ответ с токенами и информацией о пользователе
             return Ok(new LoginResponse
             {
@@ -404,7 +397,7 @@ public class AuthenticationController : ControllerBase
                 Email = user.Email,
                 Success = true,
                 UserId = user.Id,
-                RefreshTokenExpiryTime = (int)refreshTokenExpiryTime.TotalDays
+                RefreshTokenExpiryTime = (int)(refreshTokenExpiryTime - DateTime.Now).TotalDays
             });
         }
         catch (Exception ex)
@@ -419,11 +412,11 @@ public class AuthenticationController : ControllerBase
     /// <summary>
     /// Метод для обновления токена доступа.
     /// </summary>
-    /// <param name="tokenModel">Объект, содержащий текущие токены доступа и обновления.</param>
+    /// <param name="tokenRequest">Объект, содержащий текущие токены доступа и обновления.</param>
     /// <returns>Обновленные токены доступа и обновления, если запрос успешен, или сообщение об ошибке.</returns>
     [HttpPost]
     [Route("refresh")]
-    public async Task<IActionResult> RefreshToken(TokenModel tokenModel)
+    public IActionResult RefreshToken(TokenRequest tokenRequest)
     {
         try
         {
@@ -432,39 +425,18 @@ public class AuthenticationController : ControllerBase
 
             // Формируем издателя токена
             var issuer = $"{request.Scheme}://{request.Host.Value}";
-
+            
             // Получение principal из истекшего токена доступа
-            var principal = _jwtService.GetPrincipalFromExpiredToken(tokenModel.AccessToken, issuer);
+            var principal = _jwtService.GetPrincipalFromExpiredToken(tokenRequest.AccessToken, tokenRequest.RefreshToken, issuer);
 
-            // Поиск пользователя по имени из principal
-            var user = await _userManager.FindByNameAsync(principal.Identity!.Name!);
-
-            // Проверка валидности пользователя и токенов
-            if (user == null || user.RefreshToken != tokenModel.RefreshToken ||
-                user.RefreshTokenExpiryTime <= DateTime.Now)
-            {
-                // Если пользователь не найден или токены недействительны, возвращаем ошибку
-                return BadRequest(new RefreshResponse
-                {
-                    Success = false,
-                    Message = "Неверный токен доступа или токен обновления"
-                });
-            }
-
+            // Создаем идентификатор токена
+            var jti = Guid.NewGuid();
+            
             // Генерация нового токена доступа
-            var accessToken = _jwtService.GenerateAccessToken(principal, issuer);
+            var accessToken = _jwtService.GenerateAccessToken(principal, issuer, jti);
 
             // Генерация нового токена обновления и времени его истечения
-            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken();
-
-            // Устанавливаем новый токен обновления для пользователя
-            user.RefreshToken = refreshToken;
-
-            // Устанавливаем время истечения токена обновления
-            user.RefreshTokenExpiryTime = DateTime.Now.Add(refreshTokenExpiryTime);
-
-            // Обновляем информацию о пользователе в базе данных
-            await _userManager.UpdateAsync(user);
+            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken(jti);
 
             // Возвращаем обновленные токены
             return Ok(new RefreshResponse
@@ -472,7 +444,7 @@ public class AuthenticationController : ControllerBase
                 Success = true,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                RefreshTokenExpiryTime = (int)refreshTokenExpiryTime.TotalDays
+                RefreshTokenExpiryTime = (int)(refreshTokenExpiryTime - DateTime.Now).TotalDays
             });
         }
         catch (Exception ex)
@@ -506,37 +478,6 @@ public class AuthenticationController : ControllerBase
         return Ok(user.EmailConfirmed == false
             ? new CheckEmailResponse { EmailStatus = EmailStatus.NotConfirmed }
             : new CheckEmailResponse { EmailStatus = EmailStatus.Created });
-    }
-
-    /// <summary>
-    /// Метод для отзыва токена обновления у текущего пользователя.
-    /// </summary>
-    /// <returns>Ответ без содержимого, если операция успешна, или сообщение об ошибке.</returns>
-    [Authorize]
-    [HttpPost]
-    [Route("revoke")]
-    public async Task<IActionResult> Revoke()
-    {
-        // Получение имени текущего пользователя из контекста запроса
-        var username = HttpContext.User.Identity!.Name;
-
-        // Поиск пользователя по имени
-        var user = await _userManager.FindByNameAsync(username);
-
-        // Если пользователь не найден, возвращаем ошибку
-        if (user == null)
-        {
-            return BadRequest("Пользователь не существует");
-        }
-
-        // Отзыв токена обновления
-        user.RefreshToken = null;
-
-        // Обновление информации о пользователе в базе данных
-        await _userManager.UpdateAsync(user);
-
-        // Возвращаем ответ без содержимого
-        return NoContent();
     }
 
     /// <summary>

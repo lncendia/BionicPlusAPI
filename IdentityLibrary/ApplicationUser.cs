@@ -10,8 +10,6 @@ namespace IdentityLibrary
     public class ApplicationUser : MongoIdentityUser<Guid>
     {
         public string FullName { get; set; } = string.Empty;
-        public string? RefreshToken { get; set; }
-        public DateTime RefreshTokenExpiryTime { get; set; }
         public TemperatureUnits TemperatureUnits { get; set; } = TemperatureUnits.C;
         public List<Category>? Statuses { get; set; }
         public MeasureSystem MeasureSystem { get; set; } = MeasureSystem.Metric;

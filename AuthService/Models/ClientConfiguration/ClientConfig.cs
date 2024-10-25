@@ -1,17 +1,16 @@
 ﻿using System.Text.Json.Serialization;
 using AuthService.Configuration;
 
-namespace AuthService.Models.ClientConfiguration
+namespace AuthService.Models.ClientConfiguration;
+
+public class ClientConfig
 {
-    public class ClientConfig
-    {
-        [JsonPropertyName("endpoints")]
-        public ClientEndpointsConfig? Endpoints { get; set; }
+    [JsonPropertyName("endpoints")]
+    public ClientEndpointsConfig? Endpoints { get; set; }
 
-        [JsonPropertyName("settings")]
-        public ClientSettingsConfig? Settings { get; set; }
+    [JsonPropertyName("settings")]
+    public ClientSettingsConfig? Settings { get; set; }
 
-        [JsonPropertyName("payment")]
-        public PaymentConfig? Payment { get; set; }
-    }
+    [JsonPropertyName("payment")]
+    public PaymentConfig? Payment { get; set; }
 }

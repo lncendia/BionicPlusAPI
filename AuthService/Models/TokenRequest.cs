@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace AuthService.Dtos;
+namespace AuthService.Models;
 
-public class TokenModel
+public class TokenRequest
 {
     [Required]
     public string AccessToken { get; set; } = string.Empty;
