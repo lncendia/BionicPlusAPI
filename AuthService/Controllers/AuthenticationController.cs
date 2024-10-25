@@ -159,7 +159,7 @@ public class AuthenticationController : ControllerBase
             return BadRequest(new RegisterResponse
             {
                 Success = false,
-                Message = $"Не удалось восстановить пароль {result.Errors?.FirstOrDefault()?.Description}",
+                Message = $"The password could not be restored {result.Errors?.FirstOrDefault()?.Description}",
                 Code = Enum.Parse<AuthErrorCode>(result.Errors?.FirstOrDefault()?.Code ?? "")
             });
         }
@@ -193,7 +193,7 @@ public class AuthenticationController : ControllerBase
             return BadRequest(new RegisterResponse
             {
                 Success = false,
-                Message = $"Не удалось изменить пароль {result.Errors?.FirstOrDefault()?.Description}",
+                Message = $"The password could not be restored {result.Errors?.FirstOrDefault()?.Description}",
                 Code = Enum.Parse<AuthErrorCode>(result.Errors?.FirstOrDefault()?.Code ?? "")
             });
         }
@@ -238,7 +238,7 @@ public class AuthenticationController : ControllerBase
             // Если пользователь уже существует, возвращаем ошибку
             if (user != null)
             {
-                return BadRequest(new RegisterResponse { Success = false, Message = "Пользователь уже существует" });
+                return BadRequest(new RegisterResponse { Success = false, Message = "The user already exists" });
             }
 
             // Создание нового пользователя
@@ -258,7 +258,7 @@ public class AuthenticationController : ControllerBase
                 {
                     Success = false,
                     Message =
-                        $"Не удалось создать пользователя {createUserResult.Errors?.FirstOrDefault()?.Description}",
+                        $"Failed to create a user {createUserResult.Errors?.FirstOrDefault()?.Description}",
                     Code = Enum.Parse<AuthErrorCode>(createUserResult.Errors?.FirstOrDefault()?.Code ?? "")
                 });
             }
@@ -288,7 +288,7 @@ public class AuthenticationController : ControllerBase
                 return BadRequest(new RegisterResponse
                 {
                     Success = false,
-                    Message = "Не удалось создать пользователя. Не удалось установить подписку"
+                    Message = "Failed to create a user. Failed to install subscription"
                 });
             }
 
@@ -314,7 +314,7 @@ public class AuthenticationController : ControllerBase
                 {
                     Success = false,
                     Message =
-                        $"Не удалось добавить пользователя в роль {addUserToRole.Errors?.FirstOrDefault()?.Description}"
+                        $"The user could not be added to the role {addUserToRole.Errors?.FirstOrDefault()?.Description}"
                 });
             }
 
@@ -326,7 +326,7 @@ public class AuthenticationController : ControllerBase
                 MailGenerator.GenerateTokenMessage(confirmToken, user.Email, LocalizationsLanguage.en));
 
             // Возвращаем успешный ответ
-            return Ok(new RegisterResponse { Success = true, Message = "Пользователь успешно создан" });
+            return Ok(new RegisterResponse { Success = true, Message = "The user has been successfully created" });
         }
         catch (Exception ex)
         {
@@ -359,7 +359,7 @@ public class AuthenticationController : ControllerBase
                 // Если пользователь не найден, возвращаем ошибку
                 return BadRequest(new LoginResponse
                 {
-                    Success = false, Message = "Пользователь не существует", Code = AuthErrorCode.UserNotExists
+                    Success = false, Message = "The user does not exist", Code = AuthErrorCode.UserNotExists
                 });
             }
 
@@ -368,7 +368,7 @@ public class AuthenticationController : ControllerBase
             {
                 // Если пароль неверен, возвращаем ошибку
                 return BadRequest(new LoginResponse
-                    { Success = false, Message = "Неверный пароль", Code = AuthErrorCode.PasswordIncorrect });
+                    { Success = false, Message = "Invalid password", Code = AuthErrorCode.PasswordIncorrect });
             }
 
             // Создание объекта principal для пользователя
@@ -400,7 +400,7 @@ public class AuthenticationController : ControllerBase
             {
                 AccessToken = token,
                 RefreshToken = refreshToken,
-                Message = "Вход выполнен успешно",
+                Message = "The login was completed successfully",
                 Email = user.Email,
                 Success = true,
                 UserId = user.Id,
@@ -447,7 +447,7 @@ public class AuthenticationController : ControllerBase
                 return BadRequest(new RefreshResponse
                 {
                     Success = false,
-                    Message = "Неверный токен доступа или токен обновления"
+                    Message = "Invalid access token or update token"
                 });
             }
 
@@ -479,7 +479,7 @@ public class AuthenticationController : ControllerBase
         {
             // Логирование ошибки и возврат сообщения об ошибке
             _logger.LogError(ex, "Произошла ошибка при обновлении токена");
-            return BadRequest("Неверный запрос клиента");
+            return BadRequest(new LoginResponse { Success = false, Message = ex.Message });
         }
     }
 
@@ -526,7 +526,7 @@ public class AuthenticationController : ControllerBase
         // Если пользователь не найден, возвращаем ошибку
         if (user == null)
         {
-            return BadRequest("Пользователь не существует");
+            return BadRequest("The user does not exist");
         }
 
         // Отзыв токена обновления
@@ -555,13 +555,13 @@ public class AuthenticationController : ControllerBase
         // Если пользователь не найден, возвращаем ошибку
         if (user == null)
         {
-            return NotFound("Пользователь не найден");
+            return NotFound("The user was not found");
         }
 
         // Если email уже подтвержден, возвращаем ошибку
         if (user.EmailConfirmed)
         {
-            return BadRequest("Email пользователя уже подтвержден");
+            return BadRequest("The user's email has already been confirmed");
         }
 
         // Подтверждение email пользователя с использованием токена
@@ -570,7 +570,7 @@ public class AuthenticationController : ControllerBase
         // Если подтверждение не удалось, возвращаем ошибку
         if (confirmResult.Succeeded != true)
         {
-            return BadRequest("Ошибка подтверждения токена");
+            return BadRequest("Token confirmation error");
         }
 
         // Возвращаем успешный ответ
@@ -592,14 +592,14 @@ public class AuthenticationController : ControllerBase
         // Если пользователь не найден, возвращаем ошибку
         if (user == null)
         {
-            return NotFound("Пользователь не найден");
+            return NotFound("The user was not found");
         }
 
         // Проверка, подтвержден ли уже email пользователя
         if (user.EmailConfirmed)
         {
             // Если email уже подтвержден, возвращаем ошибку
-            return BadRequest("Email пользователя уже подтвержден");
+            return BadRequest("The user's email has already been confirmed");
         }
 
         // Генерация нового токена подтверждения email

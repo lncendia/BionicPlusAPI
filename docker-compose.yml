@@ -107,6 +107,8 @@ services:
       - ENDPOINTSCONFIG__AUTHSERVICEURL=${INPUT_LOGIN_HOST}
       - MERCHANTINFO__PASSWORD1=${INPUT_MERCHANT_PASS1}
       - MERCHANTINFO__PASSWORD2=${INPUT_MERCHANT_PASS2}
+    ports:
+      - "444:8080"
         
   nginx:
     image: nginx:latest

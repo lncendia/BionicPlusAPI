@@ -68,19 +68,7 @@ app.UseCors("corsapp");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseHangfireDashboard("/hangfire/dashboard", new DashboardOptions
-{
-    //IsReadOnlyFunc = (DashboardContext context) => true,
-    Authorization = new[]
-    {
-        new HangfireCustomBasicAuthenticationFilter
-        {
-            User = "admin",
-            Pass = "admin"
-        },
-    },
-    DisplayStorageConnectionString = false,
-});
+app.CreateHangfireDashboard(builder.Configuration);
 app.UseProblemDetails();
 
 app.Run();
