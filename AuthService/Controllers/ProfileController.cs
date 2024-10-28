@@ -44,28 +44,29 @@ public class ProfileController : Controller
         {
             roles.Add(await _roleManager.FindByIdAsync(roleId.ToString()));
         }
+            
+            var subscription = await _subscriptionService.GetSubscription(user.BillingProfile!.ActiveSubscriptionId);
 
-        var sub = await _subscriptionService.GetSubscription(user.BillingProfile!.ActiveSubscriptionId);
+            if (subscription == null)
+            {
+                _logger.LogError($"An error occurred while getting subscription for user: {user.Id}");
+                return NotFound("Subscription not exist");
+            }
 
-        if (sub == null)
-        {
-            _logger.LogError("An error occurred while getting subscription for user: {id}", user.Id);
-            return NotFound("Subscription not exist");
-        }
-
-        var profile = new ProfileResponse
-        {
-            IsEmailConfirmed = user.EmailConfirmed,
-            TemperatureUnits = user.TemperatureUnits,
-            MeasureSystem = user.MeasureSystem,
-            Height = user.Height,
-            Statuses = user.Statuses,
-            Email = user.Email,
-            UserId = user.Id,
-            FullName = user.FullName,
-            Roles = roles,
-            PlanId = sub.PlanId,
-        };
+            var profile = new ProfileResponse
+            {
+                IsEmailConfirmed = user.EmailConfirmed,
+                TemperatureUnits = user.TemperatureUnits,
+                MeasureSystem = user.MeasureSystem,
+                Height = user.Height,
+                Statuses = user.Statuses,
+                Email = user.Email,
+                UserId = user.Id,
+                FullName = user.FullName,
+                Roles = roles,
+                PlanId = subscription.PlanId,
+                ProfileSubscription = new ProfileSubscription(subscription)
+            };
 
         return Ok(profile);
     }
