@@ -451,7 +451,7 @@ public class AuthenticationController : ControllerBase
                     return BadRequest(new RegisterResponse
                     {
                         Success = false,
-                        Message = "Внешний провайдер аутентификации не предоставил почту пользователя",
+                        Message = "The external authentication provider did not provide the user's email",
                         Code = AuthErrorCode.InvalidToken
                     });
                 }
@@ -474,7 +474,7 @@ public class AuthenticationController : ControllerBase
                     {
                         Success = false,
                         Message =
-                            $"Не удалось создать пользователя {createUserResult.Errors.FirstOrDefault()?.Description}",
+                            $"Failed to create a user {createUserResult.Errors.FirstOrDefault()?.Description}",
                         Code = Enum.Parse<AuthErrorCode>(createUserResult.Errors.FirstOrDefault()?.Code ?? "")
                     });
                 }
@@ -486,23 +486,14 @@ public class AuthenticationController : ControllerBase
             // Создание объекта principal для пользователя
             var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
 
-            // Получение данных запроса
-            var request = _context.HttpContext!.Request;
-
-            // Формируем издателя токена
-            var issuer = $"{request.Scheme}://{request.Host.Value}";
-
+            // Создаем идентификатор токена
+            var jti = Guid.NewGuid();
+            
             // Генерация токена доступа
-            var token = _jwtService.GenerateAccessToken(principal, issuer);
+            var token = _jwtService.GenerateAccessToken(principal, jti);
 
             // Генерация токена обновления и времени его истечения
-            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken();
-
-            // Устанавливаем новый токен обновления для пользователя
-            user.RefreshToken = refreshToken;
-
-            // Устанавливаем время истечения токена обновления
-            user.RefreshTokenExpiryTime = DateTime.Now.Add(refreshTokenExpiryTime);
+            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken(jti);
 
             // Устанавливаем подписку, если это необходимо
             if (inNewUser)
@@ -520,7 +511,7 @@ public class AuthenticationController : ControllerBase
                     return BadRequest(new RegisterResponse
                     {
                         Success = false,
-                        Message = "Не удалось создать пользователя. Не удалось установить подписку"
+                        Message = "Failed to create a user. Failed to install subscription"
                     });
                 }
 
@@ -543,7 +534,7 @@ public class AuthenticationController : ControllerBase
                     {
                         Success = false,
                         Message =
-                            $"Не удалось добавить пользователя в роль {addUserToRole.Errors?.FirstOrDefault()?.Description}"
+                            $"The user could not be added to the role {addUserToRole.Errors?.FirstOrDefault()?.Description}"
                     });
                 }
             }
@@ -556,11 +547,11 @@ public class AuthenticationController : ControllerBase
             {
                 AccessToken = token,
                 RefreshToken = refreshToken,
-                Message = "Вход выполнен успешно",
+                Message = "The login was completed successfully",
                 Email = user.Email,
                 Success = true,
                 UserId = user.Id,
-                RefreshTokenExpiryTime = (int)refreshTokenExpiryTime.TotalDays
+                RefreshTokenExpiryTime = refreshTokenExpiryTime
             });
         }
         catch (Exception ex)

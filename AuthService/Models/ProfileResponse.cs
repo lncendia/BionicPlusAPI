@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using DomainObjects.Pregnancy;
 using IdentityLibrary;
+using Microsoft.AspNetCore.Identity;
 
 namespace AuthService.Models;
 
@@ -28,11 +29,14 @@ public class ProfileResponse
     public string? PlanId { get; set; }
 
     [JsonPropertyName("roles")]
-    public List<ApplicationRole>? Roles { get; set; }
+    public IList<string>? Roles { get; set; }
 
     [JsonPropertyName("measureSystem")]
     public MeasureSystem? MeasureSystem { get; set; }
 
     [JsonPropertyName("height")]
     public double? Height { get; set; }
+    
+    [JsonPropertyName("logins")]
+    public IList<UserLoginInfo>? Logins { get; set; }
 }
