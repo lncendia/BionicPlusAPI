@@ -1,5 +1,8 @@
 ﻿using Hangfire;
-using Hangfire.PostgreSql;
+using Hangfire.Mongo;
+using Hangfire.Mongo.Migration.Strategies;
+using Hangfire.Mongo.Migration.Strategies.Backup;
+using MongoDB.Driver;
 using PaymentService.Services.Implementations;
 
 namespace PaymentService.Extensions;
@@ -12,10 +15,18 @@ public static class HangfireServices
     /// <summary>
     /// Adds Hangfire services to the collection of services
     /// </summary>
-    /// <param name="services">Коллекция служб.</param>
-    public static void AddHangfireServices(this IServiceCollection services)
+    /// <param name="services">Collection of services</param>
+    /// <param name="configuration">Application configuration</param>
+    public static void AddHangfireServices(this IServiceCollection services, IConfiguration configuration)
     {
         // Get database connection string
+        var connString = configuration.GetSection("DbSettings:ConnectionString").Value;
+
+        // Creating a MongoUrlBuilder object using the connection string
+        var mongoUrlBuilder = new MongoUrlBuilder(connString);
+
+        // Creating a MongoDB client
+        var mongoClient = new MongoClient(mongoUrlBuilder.ToMongoUrl());
 
         // Adding Hangfire services to the collection of services
         services.AddHangfire(hangfireCfg => hangfireCfg

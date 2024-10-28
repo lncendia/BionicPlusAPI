@@ -24,7 +24,7 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 
 builder.Services.AddSwaggerServices(builder.Configuration);
 
-builder.Services.AddHangfireServices();
+builder.Services.AddHangfireServices(builder.Configuration);
 
 builder.Services.AddCorsServices();
 
