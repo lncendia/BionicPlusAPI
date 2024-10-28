@@ -1,13 +1,7 @@
-﻿using Amazon.Runtime.Internal.Endpoints.StandardLibrary;
-using Amazon.Runtime.Internal.Transform;
-using DomainObjects.Subscription;
-using Hangfire;
+﻿using Hangfire;
 using Microsoft.Extensions.Options;
 using PaymentService.Models.Robokassa;
 using PaymentService.Services.Interfaces;
-using SubscriptionDBMongoAccessor;
-using SubscriptionDBMongoAccessor.Infrastracture;
-using System.Globalization;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;

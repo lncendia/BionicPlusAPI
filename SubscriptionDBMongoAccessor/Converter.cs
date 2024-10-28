@@ -60,8 +60,7 @@ namespace SubscriptionDBMongoAccessor
                 Promocode = mongoSub.Promocode,
                 Currency = mongoSub.Currency,
                 Discount = mongoSub.Discount,
-                Total = mongoSub.Total,
-                CancellationTime = mongoSub.CancellationTime
+                Total = mongoSub.Total
             };
         }
 
@@ -81,7 +80,6 @@ namespace SubscriptionDBMongoAccessor
                 Currency = sub.Currency,
                 Discount = sub.Discount,
                 Total = sub.Total,
-                CancellationTime = sub.CancellationTime
             };
         }
 

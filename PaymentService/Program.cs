@@ -1,4 +1,3 @@
-using Hangfire;
 using Hellang.Middleware.ProblemDetails;
 using MailSenderLibrary.Implementations;
 using MailSenderLibrary.Interfaces;
@@ -25,7 +24,7 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 
 builder.Services.AddSwaggerServices(builder.Configuration);
 
-builder.Services.AddHangfireServices(builder.Configuration);
+builder.Services.AddHangfireServices();
 
 builder.Services.AddCorsServices();
 
@@ -67,7 +66,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.CreateHangfireDashboard(builder.Configuration);
-app.UseHangfireServer();
+app.RunCancellationSubscriptionsJob();
 
 app.UseProblemDetails();
 

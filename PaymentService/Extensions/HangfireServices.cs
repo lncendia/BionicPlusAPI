@@ -7,27 +7,23 @@ using MongoDB.Driver;
 namespace PaymentService.Extensions;
 
 /// <summary>
-/// Статический класс для регистрации сервисов Hangfire
+/// A static class for registering Hangfire services
 /// </summary>
 public static class HangfireServices
 {
     /// <summary>
-    /// Добавляет сервисы Hangfire в коллекцию служб
+    /// Adds Hangfire services to the collection of services
     /// </summary>
     /// <param name="services">Коллекция служб.</param>
     /// <param name="configuration">Конфигурация приложения.</param>
     public static void AddHangfireServices(this IServiceCollection services, IConfiguration configuration)
     {
         // Получаем строку подключения из конфигурации
-        var connString = configuration.GetSection("DbSettings:ConnectionString").Value;
 
         // Создаем объект MongoUrlBuilder с использованием строки подключения
-        var mongoUrlBuilder = new MongoUrlBuilder(connString);
+        // Get database connection string
 
-        // Создаем клиент MongoDB
-        var mongoClient = new MongoClient(mongoUrlBuilder.ToMongoUrl());
-
-        // Добавляем сервисы Hangfire в коллекцию служб
+        // Adding Hangfire services to the collection of services
         services.AddHangfire(hangfireCfg => hangfireCfg
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
             .UseSimpleAssemblyNameTypeSerializer()
@@ -44,14 +40,28 @@ public static class HangfireServices
             })
         );
 
-        // Добавляем сервер Hangfire в коллекцию служб
+        // Adding the Hangfire server to the collection of services
         services.AddHangfireServer(serverOptions =>
         {
-            // Устанавливаем очереди для сервера Hangfire
-            serverOptions.Queues = new[] { "emails", "chargings", "usages" };
+            // Setting up queues for the Hangfire server
+            serverOptions.Queues = new[] { "emails", "chargings", "usages", "expired_subscriptions" };
             
-            // Устанавливаем имя сервера Hangfire
+            // Set Hangfire server name
             serverOptions.ServerName = "Hangfire.Mongo server 1";
         });
+    }
+    
+    /// <summary>
+    /// Schedules a recurring job to cancel expired subscriptions on a minutely basis.
+    /// </summary>
+    /// <param name="app">Application builder</param>
+    public static void RunCancellationSubscriptionsJob(this IApplicationBuilder app)
+    {
+        using var scope = app.ApplicationServices.CreateScope();
+        var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+        recurringJobManager.AddOrUpdate<SubscriptionService>(
+            "CancellationSubscriptionsJob",
+            x => x.CancelExpiredSubscriptions(),
+            Cron.Minutely);
     }
 }

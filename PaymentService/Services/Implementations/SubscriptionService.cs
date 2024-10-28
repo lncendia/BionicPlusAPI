@@ -17,8 +17,6 @@ namespace PaymentService.Services.Implementations
         private readonly IRecurrentServiceManager _recurrentServiceManager;
         private readonly ILogger<SubscriptionService> _logger;
         
-        private const string CancellationJobName = "CancellationSubscriptionsJob";
-        
         public SubscriptionService(IOptions<DbSettings> dbSettings, IOptions<SubscriptionsConfig> subscriptionsConfig,
             IOptions<PlansConfiguration> plans, IUserService userService,
             IRecurrentServiceManager recurrentServiceManager,  ILogger<SubscriptionService> logger)
@@ -28,8 +26,6 @@ namespace PaymentService.Services.Implementations
             _userService = userService;
             _recurrentServiceManager = recurrentServiceManager;
             _logger = logger;
-            
-            RunCancellationJob();
         }
 
         public Task<Subscription> GetSubscription(string subId)
@@ -173,19 +169,13 @@ namespace PaymentService.Services.Implementations
             };
         }
 
-        private void RunCancellationJob()
-        {
-            RecurringJob.AddOrUpdate(CancellationJobName, () => CancelExpiredSubscriptions(),
-                Cron.Minutely);
-        }
-
+        [Queue("expired_subscriptions")]
         public async Task CancelExpiredSubscriptions()
         {
-            var subscriptions = await _dbAccessor.GetSubscriptions(SubscriptionStatus.Pending);
+            var subscriptions = await _dbAccessor.GetExpiredPendingSubscriptions();
             
             foreach (var subscription in subscriptions)
             {
-                if (subscription.CancellationTime > DateTime.Now || subscription.Id == null) continue;
                 await _dbAccessor.SetSubscriptionStatus(subscription.Id, SubscriptionStatus.Failed);
                 _logger.LogInformation($"Subscription {subscription.Id} has been cancelled.");
             }

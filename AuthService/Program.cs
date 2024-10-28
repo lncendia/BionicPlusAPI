@@ -7,11 +7,9 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System.Text.Json.Serialization;
 using AuthService.Extensions;
-using IdentityLibrary;
 using NLog.Web;
 using MailSenderLibrary.Interfaces;
 using MailSenderLibrary.Implementations;
-using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +17,6 @@ var builder = WebApplication.CreateBuilder(args);
 BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeSerializer(MongoDB.Bson.BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(MongoDB.Bson.BsonType.String));
-
 
 builder.Services.AddApplicationOptions(builder.Configuration);
 
@@ -71,7 +68,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection();
 app.UseCors("corsapp");
 app.UseAuthentication();
 app.UseAuthorization();

@@ -45,8 +45,5 @@ namespace SubscriptionDBMongoAccessor.MongoClasses
         [BsonElement("promocode")]
         [BsonIgnoreIfDefault]
         public string? Promocode { get; set; }
-        
-        [BsonElement("cancellationTime")]
-        public DateTime CancellationTime { get; set; }
     }
 }
