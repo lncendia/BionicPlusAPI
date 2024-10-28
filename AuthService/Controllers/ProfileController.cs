@@ -2,9 +2,7 @@
 using AuthService.Models;
 using AuthService.Services.Interfaces;
 using DomainObjects.Pregnancy.UserProfile;
-using DomainObjects.Subscription;
 using IdentityLibrary;
-using IdentityLibrary.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
