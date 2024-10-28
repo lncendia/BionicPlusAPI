@@ -1,5 +1,4 @@
-﻿using AuthService.Dtos;
-using AuthService.Models;
+﻿using AuthService.Models;
 using AuthService.Services.Interfaces;
 using DomainObjects.Pregnancy.UserProfile;
 using IdentityLibrary;

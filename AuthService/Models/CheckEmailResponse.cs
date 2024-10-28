@@ -1,7 +1,6 @@
-﻿namespace AuthService.Models
+﻿namespace AuthService.Models;
+
+public class CheckEmailResponse
 {
-    public class CheckEmailResponse
-    {
-        public EmailStatus EmailStatus { get; set; }
-    }
+    public EmailStatus EmailStatus { get; set; }
 }

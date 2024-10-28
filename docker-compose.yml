@@ -6,7 +6,6 @@ services:
       dockerfile: AuthService/Dockerfile
     container_name: authservice
     environment:
-      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - DBSETTINGS__NAME=Identity
@@ -16,6 +15,7 @@ services:
       - JWTCONFIG__VALIDISSUER=${INPUT_VALID_ISSUER}
       - JWTCONFIG__VALIDAUDIENCES=${INPUT_AUTH_AUDIENCE}
       - JWTCONFIG__REFRESHTOKENVALIDITYINDAYS=30
+      - JWTCONFIG__REFRESHTOKENIV=wExIGwlziTUTdqov2nKskw==
       - REVERSEPROXYCONFIG__LOGINPROXY=${INPUT_LOGIN_PROXY}
       - REVERSEPROXYCONFIG__APIPROXY=${INPUT_API_PROXY}
       - REVERSEPROXYCONFIG__PAYMENTPROXY=${INPUT_PAYMENT_PROXY}
@@ -114,6 +114,7 @@ services:
     image: nginx:latest
     ports:
       - "443:443"
+      - "80:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ${APPDATA}/ASP.NET/https:/https:ro

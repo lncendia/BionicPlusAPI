@@ -1,8 +1,7 @@
-﻿namespace AuthService.Configuration
+﻿namespace AuthService.Configuration;
+
+public class DbSettings
 {
-    public class DbSettings
-    {
-        public string? ConnectionString { get; set; }
-        public string? Name { get; set; }
-    }
+    public string? ConnectionString { get; set; }
+    public string? Name { get; set; }
 }
