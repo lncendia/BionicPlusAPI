@@ -5,7 +5,7 @@ namespace PaymentService.Services.Interfaces
 {
     public interface ISubscriptionService
     {
-        Task<string> SetFreeSubscription(string userId, bool setupUsage, bool discardUsage = true);
+        Task<string> CreateFreeSubscription(string userId, bool setupUsage, bool discardUsage = true);
         Task<Subscription> GetSubscription(string subId);
         Task<BillingPromocode> GetPromocode(string promocode);
         Task<PriceModel> CalculatePrice(string planId, string promocode);

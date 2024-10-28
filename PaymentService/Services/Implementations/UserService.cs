@@ -1,11 +1,7 @@
 ﻿using DomainObjects.Pregnancy.UserProfile;
 using DomainObjects.Subscription;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
-using PaymentService.Models;
 using PaymentService.Services.Interfaces;
-using System.Text;
-using System.Text.Json;
 using IdentityLibrary;
 
 namespace PaymentService.Services.Implementations
@@ -60,10 +56,7 @@ namespace PaymentService.Services.Implementations
                 return false;
             };
 
-            if(user.BillingProfile == null)
-            {
-                user.BillingProfile = new BillingProfile();
-            }
+            user.BillingProfile ??= new BillingProfile();
 
             user.BillingProfile.ActiveSubscriptionId = subscriptionId;
             user.BillingProfile.isFreePlan = isFreePlan;

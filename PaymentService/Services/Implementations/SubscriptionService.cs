@@ -5,7 +5,7 @@ using PaymentService.Models;
 using PaymentService.Services.Interfaces;
 using SubscriptionDBMongoAccessor;
 using SubscriptionDBMongoAccessor.Infrastracture;
-using System;
+using SubscriptionsConfig = SubscriptionDBMongoAccessor.Infrastracture.SubscriptionsConfig;
 
 namespace PaymentService.Services.Implementations
 {
@@ -15,13 +15,21 @@ namespace PaymentService.Services.Implementations
         private readonly PlansConfiguration _plans;
         private readonly IUserService _userService;
         private readonly IRecurrentServiceManager _recurrentServiceManager;
-
-        public SubscriptionService(IOptions<DbSettings> settings, IOptions<PlansConfiguration> plans, IUserService userService, IRecurrentServiceManager recurrentServiceManager)
+        private readonly ILogger<SubscriptionService> _logger;
+        
+        private const string CancellationJobName = "CancellationSubscriptionsJob";
+        
+        public SubscriptionService(IOptions<DbSettings> dbSettings, IOptions<SubscriptionsConfig> subscriptionsConfig,
+            IOptions<PlansConfiguration> plans, IUserService userService,
+            IRecurrentServiceManager recurrentServiceManager,  ILogger<SubscriptionService> logger)
         {
-            _dbAccessor = new SubscriptionDBAccessor(settings.Value);
+            _dbAccessor = new SubscriptionDBAccessor(dbSettings.Value, subscriptionsConfig.Value);
             _plans = plans.Value;
             _userService = userService;
             _recurrentServiceManager = recurrentServiceManager;
+            _logger = logger;
+            
+            RunCancellationJob();
         }
 
         public Task<Subscription> GetSubscription(string subId)
@@ -30,7 +38,7 @@ namespace PaymentService.Services.Implementations
             return subscription;
         }
 
-        public async Task<string> SetFreeSubscription(string userId, bool setupUsage, bool discardUsage = true)
+        public async Task<string> CreateFreeSubscription(string userId, bool setupUsage, bool discardUsage = true)
         {
             var freePlanId = _plans.FreePlanId;
 
@@ -45,7 +53,7 @@ namespace PaymentService.Services.Implementations
                 await _dbAccessor.SetUsage(userId, freePlanId);
             }
 
-            var subscriptionId = await _dbAccessor.SetFreeSubscription(userId, freePlanId);
+            var subscriptionId = await _dbAccessor.SetFreeSubscription(freePlanId);
 
             return subscriptionId;
         }
@@ -62,6 +70,7 @@ namespace PaymentService.Services.Implementations
         public async Task<string> CreateSubscription(string planId, string invoiceId, string? promocode)
         {
             var subscriptionId = string.Empty;
+            
             if (promocode != null)
             {
                 var promoModel = await _dbAccessor.GetPromocode(promocode);
@@ -89,22 +98,22 @@ namespace PaymentService.Services.Implementations
             }
 
             var subscription = await GetSubscription(subId);
-            if (subscription.Status != SubscriptionStatus.ACTIVE)
+            if (subscription.Status != SubscriptionStatus.Active)
             {
                 await DeactivateSubscription(subId);
-                var freeSubID = await SetFreeSubscription(userId, false);
+                var freeSubID = await CreateFreeSubscription(userId, false);
                 await _userService.SetSubscription(userId, freeSubID, true);
             }
         }
 
         public async Task<string> ActivateSubscription(string subscriptionId)
         {
-            return await _dbAccessor.ActivateSubscription(subscriptionId);
+            return await _dbAccessor.SetSubscriptionStatus(subscriptionId, SubscriptionStatus.Active);
         }
 
         public async Task<string> DeactivateSubscription(string subscriptionId)
         {
-            return await _dbAccessor.ActivateSubscription(subscriptionId);
+            return await _dbAccessor.SetSubscriptionStatus(subscriptionId, SubscriptionStatus.Inactive);
         }
 
         public async Task<bool> CheckInvoiceExist(int invoiceId)
@@ -164,6 +173,24 @@ namespace PaymentService.Services.Implementations
             };
         }
 
+        private void RunCancellationJob()
+        {
+            RecurringJob.AddOrUpdate(CancellationJobName, () => CancelExpiredSubscriptions(),
+                Cron.Minutely);
+        }
+
+        public async Task CancelExpiredSubscriptions()
+        {
+            var subscriptions = await _dbAccessor.GetSubscriptions(SubscriptionStatus.Pending);
+            
+            foreach (var subscription in subscriptions)
+            {
+                if (subscription.CancellationTime > DateTime.Now || subscription.Id == null) continue;
+                await _dbAccessor.SetSubscriptionStatus(subscription.Id, SubscriptionStatus.Failed);
+                _logger.LogInformation($"Subscription {subscription.Id} has been cancelled.");
+            }
+        }
+        
         private decimal CalculateSale(BillingPromocode? promocode, Plan plan)
         {
             decimal sale = 0;

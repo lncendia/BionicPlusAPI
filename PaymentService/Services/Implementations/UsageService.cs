@@ -1,9 +1,9 @@
 ﻿using DomainObjects.Subscription;
 using Microsoft.Extensions.Options;
-using PaymentService.Models;
 using PaymentService.Services.Interfaces;
 using SubscriptionDBMongoAccessor;
 using SubscriptionDBMongoAccessor.Infrastracture;
+using SubscriptionsConfig = SubscriptionDBMongoAccessor.Infrastracture.SubscriptionsConfig;
 
 namespace PaymentService.Services.Implementations
 {
@@ -11,9 +11,9 @@ namespace PaymentService.Services.Implementations
     {
         private readonly SubscriptionDBAccessor _dbAccessor;
 
-        public UsageService(IOptions<DbSettings> settings)
+        public UsageService(IOptions<DbSettings> dbSettings, IOptions<SubscriptionsConfig> subscriptionsConfig)
         {
-            _dbAccessor = new SubscriptionDBAccessor(settings.Value);
+            _dbAccessor = new SubscriptionDBAccessor(dbSettings.Value, subscriptionsConfig.Value);
         }
 
         public async Task<Usage> DecrementUsageAsync(LimitKind limitKind, string userId)
