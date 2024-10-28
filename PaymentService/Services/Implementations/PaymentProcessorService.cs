@@ -85,7 +85,7 @@ namespace PaymentService.Services.Implementations
                 //Recurring charge
                 if (isMonthly)
                 {
-                    _chargeService.PlanMountlyCharge(userId, planId, invoiceId);
+                    _chargeService.PlanMonthlyCharge(userId, planId, invoiceId);
                 }
                 else
                 {

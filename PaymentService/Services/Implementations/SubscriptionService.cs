@@ -5,6 +5,7 @@ using PaymentService.Models;
 using PaymentService.Services.Interfaces;
 using SubscriptionDBMongoAccessor;
 using SubscriptionDBMongoAccessor.Infrastracture;
+using SubscriptionsConfig = SubscriptionDBMongoAccessor.Infrastracture.SubscriptionsConfig;
 
 namespace PaymentService.Services.Implementations
 {
@@ -18,11 +19,11 @@ namespace PaymentService.Services.Implementations
         
         private const string CancellationJobName = "CancellationSubscriptionsJob";
         
-        public SubscriptionService(IOptions<DbSettings> settings, IOptions<PlansConfiguration> plans,
-            IUserService userService, IRecurrentServiceManager recurrentServiceManager,
-            ILogger<SubscriptionService> logger)
+        public SubscriptionService(IOptions<DbSettings> dbSettings, IOptions<SubscriptionsConfig> subscriptionsConfig,
+            IOptions<PlansConfiguration> plans, IUserService userService,
+            IRecurrentServiceManager recurrentServiceManager,  ILogger<SubscriptionService> logger)
         {
-            _dbAccessor = new SubscriptionDBAccessor(settings.Value);
+            _dbAccessor = new SubscriptionDBAccessor(dbSettings.Value, subscriptionsConfig.Value);
             _plans = plans.Value;
             _userService = userService;
             _recurrentServiceManager = recurrentServiceManager;
@@ -107,12 +108,12 @@ namespace PaymentService.Services.Implementations
 
         public async Task<string> ActivateSubscription(string subscriptionId)
         {
-            return await _dbAccessor.ActivateSubscription(subscriptionId);
+            return await _dbAccessor.SetSubscriptionStatus(subscriptionId, SubscriptionStatus.Active);
         }
 
         public async Task<string> DeactivateSubscription(string subscriptionId)
         {
-            return await _dbAccessor.ActivateSubscription(subscriptionId);
+            return await _dbAccessor.SetSubscriptionStatus(subscriptionId, SubscriptionStatus.Inactive);
         }
 
         public async Task<bool> CheckInvoiceExist(int invoiceId)
@@ -184,11 +185,9 @@ namespace PaymentService.Services.Implementations
             
             foreach (var subscription in subscriptions)
             {
-                if (subscription.CancellationTime <= DateTime.Now && subscription.Id != null)
-                {
-                    await _dbAccessor.SetSubscriptionStatus(subscription.Id, SubscriptionStatus.Failed);
-                    _logger.LogInformation($"Subscription {subscription.Id} has been cancelled.");
-                }
+                if (subscription.CancellationTime > DateTime.Now || subscription.Id == null) continue;
+                await _dbAccessor.SetSubscriptionStatus(subscription.Id, SubscriptionStatus.Failed);
+                _logger.LogInformation($"Subscription {subscription.Id} has been cancelled.");
             }
         }
         

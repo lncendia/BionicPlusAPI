@@ -13,16 +13,17 @@ namespace SubscriptionDBMongoAccessor
         private const string UsagesCollectionName = "Usages";
         private const string SubscriptionsCollectionName = "Subscriptions";
         private const string PromocodeCollectionName = "Promocodes";
-        private static readonly TimeSpan CancellationTimeWaiting = TimeSpan.FromMinutes(2);
+        private readonly TimeSpan _cancellationTimeWaiting;
 
         private readonly IMongoCollection<MongoPlan> _plansCollection;
         private readonly IMongoCollection<MongoUsage> _usageCollection;
         private readonly IMongoCollection<MongoSubscription> _subscriptionsCollection;
         private readonly IMongoCollection<MongoPromocode> _promocodeCollection;
 
-        public SubscriptionDBAccessor(DbSettings dbSettings)
+        public SubscriptionDBAccessor(DbSettings dbSettings, SubscriptionsConfig subscriptionsConfig)
         {
             var client = new MongoClient(dbSettings.ConnectionString);
+            _cancellationTimeWaiting = TimeSpan.FromMinutes(subscriptionsConfig.ExpiredTimeInMinutes);                                                                                                       
             var db = client.GetDatabase(DbName);
             _plansCollection = db.GetCollection<MongoPlan>(PlansCollectionName);
             _usageCollection = db.GetCollection<MongoUsage>(UsagesCollectionName);
@@ -116,22 +117,11 @@ namespace SubscriptionDBMongoAccessor
             return subscription.Id ?? throw new FormatException($"Can't get subscription id");
         }
 
-        public async Task<string> ActivateSubscription(string subscriptionId)
+        public async Task<string> SetSubscriptionStatus(string subscriptionId, SubscriptionStatus status)
         {
             var filter = Builders<MongoSubscription>.Filter.Where(p => p.Id == subscriptionId);
 
-            var newSubscription = Builders<MongoSubscription>.Update.Set(u => u.Status, SubscriptionStatus.Active);
-
-            var updateResult = await _subscriptionsCollection.FindOneAndUpdateAsync(filter, newSubscription);
-
-            return updateResult.Id ?? throw new ArgumentException($"Not found subscription with id = {subscriptionId}");
-        }
-
-        public async Task<string> DeactivateSubscription(string subscriptionId)
-        {
-            var filter = Builders<MongoSubscription>.Filter.Where(p => p.Id == subscriptionId);
-
-            var newSubscription = Builders<MongoSubscription>.Update.Set(u => u.Status, SubscriptionStatus.Inactive);
+            var newSubscription = Builders<MongoSubscription>.Update.Set(u => u.Status, status);
 
             var updateResult = await _subscriptionsCollection.FindOneAndUpdateAsync(filter, newSubscription);
 
@@ -252,7 +242,7 @@ namespace SubscriptionDBMongoAccessor
 
         private DateTime GetCancellationTime()
         {
-            return DateTime.Now + CancellationTimeWaiting;
+            return DateTime.Now + _cancellationTimeWaiting;
         }
 
         private void ApplySale(MongoPlan plan, decimal sale)

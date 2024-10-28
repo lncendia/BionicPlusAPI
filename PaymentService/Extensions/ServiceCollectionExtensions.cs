@@ -2,6 +2,7 @@
 using PaymentService.Models;
 using PaymentService.Models.Robokassa;
 using SubscriptionDBMongoAccessor.Infrastracture;
+using SubscriptionsConfig = PaymentService.Models.SubscriptionsConfig;
 
 namespace PaymentService.Extensions;
 
@@ -40,6 +41,13 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection ConfigureEndpoints(this IServiceCollection services, IConfigurationSection endpointsSection)
     {
         services.Configure<EndpointsConfig>(endpointsSection);
+        return services;
+    }
+
+    public static IServiceCollection ConfigureSubscriptionsConfig(this IServiceCollection services,
+        IConfigurationSection subscriptionsSection)
+    {
+        services.Configure<SubscriptionsConfig>(subscriptionsSection);
         return services;
     }
 }
