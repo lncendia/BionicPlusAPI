@@ -3,7 +3,6 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using AuthService.Configuration;
-using AuthService.Models;
 using AuthService.Services.Interfaces;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -52,11 +51,6 @@ public class JwtService : IJwtService, IDisposable
     private readonly SymmetricAlgorithm _algorithm;
 
     /// <summary>
-    /// Ключ для шифрования токена обновления.
-    /// </summary>
-    private readonly byte[] _refreshTokenKey;
-
-    /// <summary>
     /// Конструктор
     /// </summary>
     /// <param name="jwtConfig">Конфигурация JWT</param>
@@ -74,17 +68,23 @@ public class JwtService : IJwtService, IDisposable
         // Устанавливаем время жизни токена доступа
         _accessTokenLifetime = TimeSpan.FromHours(3);
 
-        // Устанавливаем ключ для токена обновления
-        _refreshTokenKey = Encoding.UTF8.GetBytes(jwtConfig.Value.IssuerSigningKey);
-
+        // Формируем ключ для подписи сигнатуры и шифрования токена обновления
+        var key = Encoding.UTF8.GetBytes(jwtConfig.Value.IssuerSigningKey);
+        
         // Создаем симметричный ключ безопасности на основе секретного ключа
-        var securityKey = new SymmetricSecurityKey(_refreshTokenKey);
+        var securityKey = new SymmetricSecurityKey(key);
 
         // Создаем учетные данные для подписи токена
         _credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         // Создаем объект для шифрования Aes
         _algorithm = Aes.Create();
+        
+        // Устанавливаем ключ для шифрования токена обновления
+        _algorithm.Key = key;
+        
+        // Устанавливаем вектор инициализации
+        _algorithm.IV = Convert.FromBase64String(jwtConfig.Value.RefreshTokenIV);
     }
 
     /// <inheritdoc/>
@@ -98,7 +98,7 @@ public class JwtService : IJwtService, IDisposable
 
         // Добавляем утверждение JTI (JWT ID) с идентификатором токена
         claims.Add(new Claim(JwtRegisteredClaimNames.Jti, tokenId.ToString()));
-
+        
         // Добавляем утверждения для каждой аудитории из списка аудиторий
         claims.AddRange(_audiences.Select(audience => new Claim(JwtRegisteredClaimNames.Aud, audience)));
 
@@ -118,8 +118,7 @@ public class JwtService : IJwtService, IDisposable
     /// <summary>
     /// Получает объект ClaimsPrincipal из истекшего токена.
     /// </summary>
-    /// <param name="tokenId">Идентификатор токена.</param>
-    public (string, DateTime) GenerateRefreshToken(Guid tokenId)
+    public (string, int) GenerateRefreshToken(Guid tokenId)
     {
         // Создаем данные для токена обновления
         var refreshTokenPayload = new RefreshTokenData
@@ -135,7 +134,7 @@ public class JwtService : IJwtService, IDisposable
         var token = Encrypt(refreshTokenJson);
 
         // Возвращаем зашифрованный токен и время его истечения
-        return (token, refreshTokenPayload.Expiration);
+        return (token, _refreshTokenLifetime.Days);
     }
 
     /// <inheritdoc/>
@@ -145,14 +144,14 @@ public class JwtService : IJwtService, IDisposable
     public ClaimsPrincipal GetPrincipalFromExpiredToken(string token, string refreshToken)
     {
         // Расшифровываем токен обновления
-        var refreshTokenJson = Decrypt(token);
+        var refreshTokenJson = Decrypt(refreshToken);
 
         // Десериализуем JSON данные токена обновления
         var tokenPayload = JsonConvert.DeserializeObject<RefreshTokenData>(refreshTokenJson)!;
 
         // Проверяем, что токен обновления еще не истек
         if (tokenPayload.Expiration < DateTime.Now) throw new SecurityTokenException("Invalid token");
-
+        
         // Настраиваем параметры валидации токена
         var tokenValidationParameters = new TokenValidationParameters
         {
@@ -171,7 +170,7 @@ public class JwtService : IJwtService, IDisposable
             var principal = _handler.ValidateToken(token, tokenValidationParameters, out var parsedToken);
 
             // Проверяем, что идентификатор токена можно преобразовать в Guid
-            if (Guid.TryParse(parsedToken.Id, out var parsedTokenId)) throw new SecurityTokenException("Invalid token");
+            if (!Guid.TryParse(parsedToken.Id, out var parsedTokenId)) throw new SecurityTokenException("Invalid token");
 
             // Проверяем, что идентификатор токена совпадает с идентификатором токена обновления
             if (parsedTokenId != tokenPayload.TokenId) throw new SecurityTokenException("Invalid token");
@@ -194,7 +193,7 @@ public class JwtService : IJwtService, IDisposable
     private string Encrypt(string data)
     {
         // Создаем объект шифрования
-        using var encryptor = _algorithm.CreateEncryptor(_refreshTokenKey, _algorithm.IV);
+        using var encryptor = _algorithm.CreateEncryptor(_algorithm.Key, _algorithm.IV);
 
         // Преобразуем данные в байты
         var dataBytes = Encoding.UTF8.GetBytes(data);
@@ -214,7 +213,7 @@ public class JwtService : IJwtService, IDisposable
     private string Decrypt(string encryptedData)
     {
         // Создаем объект расшифрования
-        using var decryptor = _algorithm.CreateDecryptor(_refreshTokenKey, _algorithm.IV);
+        using var decryptor = _algorithm.CreateDecryptor(_algorithm.Key, _algorithm.IV);
 
         // Преобразуем зашифрованные данные из строки Base64 в байты
         var encryptedDataBytes = Convert.FromBase64String(encryptedData);

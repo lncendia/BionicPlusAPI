@@ -28,5 +28,5 @@ public interface IJwtService
     /// </summary>
     /// <param name="tokenId"></param>
     /// <returns>Кортеж, содержащий токен обновления и его время истечения.</returns>
-    (string, DateTime) GenerateRefreshToken(Guid tokenId);
+    (string, int) GenerateRefreshToken(Guid tokenId);
 }

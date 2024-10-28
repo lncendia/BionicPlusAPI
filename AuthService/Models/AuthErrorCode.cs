@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json.Schema;
-
-namespace AuthService.Models;
+﻿namespace AuthService.Models;
 
 public enum AuthErrorCode
 {
@@ -13,4 +11,5 @@ public enum AuthErrorCode
     PasswordMismatch = 6,
     InvalidToken = 7,
     CaptchaNotPassed = 8,
+    SecurityStampOutdated = 9
 }

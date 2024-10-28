@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Security.Claims;
 using IdentityLibrary;
+using Microsoft.Extensions.Options;
 
 namespace AuthService.Controllers;
 
@@ -24,6 +25,11 @@ public class AuthenticationController : ControllerBase
     /// Менеджер пользователей.
     /// </summary>
     private readonly UserManager<ApplicationUser> _userManager;
+    
+    /// <summary>
+    /// Конфигурация Identity.
+    /// </summary>
+    private readonly IdentityOptions _identityOptions;
 
     /// <summary>
     /// Сервис для отправки электронной почты.
@@ -71,6 +77,7 @@ public class AuthenticationController : ControllerBase
     /// <param name="jwtService">Сервис для работы с JWT токенами.</param>
     /// <param name="userClaimsPrincipalFactory">Фабрика для создания объектов ClaimsPrincipal.</param>
     /// <param name="captchaValidator">Сервис валидации капчи.</param>
+    /// <param name="identityOptions">Конфигурация Identity.</param>
     public AuthenticationController(
         UserManager<ApplicationUser> userManager,
         IEmailService emailService,
@@ -79,7 +86,8 @@ public class AuthenticationController : ControllerBase
         ILogger<AuthenticationController> logger,
         IJwtService jwtService,
         IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory, 
-        ICaptchaValidator captchaValidator)
+        ICaptchaValidator captchaValidator, 
+        IOptions<IdentityOptions> identityOptions)
     {
         _userManager = userManager;
         _emailService = emailService;
@@ -88,6 +96,7 @@ public class AuthenticationController : ControllerBase
         _jwtService = jwtService;
         _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
         _captchaValidator = captchaValidator;
+        _identityOptions = identityOptions.Value;
         _context = httpContextAccessor;
     }
 
@@ -384,7 +393,7 @@ public class AuthenticationController : ControllerBase
                 Email = user.Email,
                 Success = true,
                 UserId = user.Id,
-                RefreshTokenExpiryTime = (int)(refreshTokenExpiryTime - DateTime.Now).TotalDays
+                RefreshTokenExpiryTime = refreshTokenExpiryTime
             });
         }
         catch (Exception ex)
@@ -403,13 +412,32 @@ public class AuthenticationController : ControllerBase
     /// <returns>Обновленные токены доступа и обновления, если запрос успешен, или сообщение об ошибке.</returns>
     [HttpPost]
     [Route("refresh")]
-    public IActionResult RefreshToken(TokenRequest tokenRequest)
+    public async Task<IActionResult> RefreshToken(TokenRequest tokenRequest)
     {
         try
         {
             // Получение principal из истекшего токена доступа
             var principal = _jwtService.GetPrincipalFromExpiredToken(tokenRequest.AccessToken, tokenRequest.RefreshToken);
 
+            // Получение идентификатора пользователя из principal
+            var id = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Получение security stamp из principal
+            var securityStamp = principal.FindFirstValue(_identityOptions.ClaimsIdentity.SecurityStampClaimType);
+
+            // Поиск пользователя по идентификатору
+            var user = await _userManager.FindByIdAsync(id);
+            
+            // Если пользователь не прошел проверку безопасности, возвращаем ошибку с сообщением
+            if (user == null || user.SecurityStamp != securityStamp)
+            {
+                return BadRequest(new LoginResponse {
+                    Success = false,
+                    Message = "The security stamp is outdated. Please authenticate again",
+                    Code = AuthErrorCode.SecurityStampOutdated
+                });
+            }
+            
             // Создаем идентификатор токена
             var jti = Guid.NewGuid();
             
@@ -425,7 +453,7 @@ public class AuthenticationController : ControllerBase
                 Success = true,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                RefreshTokenExpiryTime = (int)(refreshTokenExpiryTime - DateTime.Now).TotalDays
+                RefreshTokenExpiryTime = refreshTokenExpiryTime
             });
         }
         catch (Exception ex)
@@ -498,6 +526,34 @@ public class AuthenticationController : ControllerBase
 
         // Возвращаем успешный ответ
         return Ok();
+    }
+    
+    /// <summary>
+    /// Метод для закрытия всех сессий.
+    /// </summary>
+    /// <returns>Ответ без содержимого, если операция успешна, или сообщение об ошибке.</returns>
+    [Authorize]
+    [HttpPost]
+    [Route("revokeAll")]
+    public async Task<IActionResult> RevokeAll()
+    {
+        // Получение имени текущего пользователя из контекста запроса
+        var username = HttpContext.User.Identity!.Name;
+
+        // Поиск пользователя по имени
+        var user = await _userManager.FindByNameAsync(username);
+
+        // Если пользователь не найден, возвращаем ошибку
+        if (user == null)
+        {
+            return BadRequest("Пользователь не существует");
+        }
+
+        // Обновление SecurityStamp у пользователя
+        await _userManager.UpdateSecurityStampAsync(user);
+
+        // Возвращаем ответ без содержимого
+        return NoContent();
     }
 
     /// <summary>
