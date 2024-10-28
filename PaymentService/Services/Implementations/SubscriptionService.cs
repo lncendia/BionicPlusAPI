@@ -7,15 +7,15 @@ using SubscriptionDBMongoAccessor;
 using SubscriptionDBMongoAccessor.Infrastracture;
 using SubscriptionsConfig = SubscriptionDBMongoAccessor.Infrastracture.SubscriptionsConfig;
 
-namespace PaymentService.Services.Implementations
+namespace PaymentService.Services.Implementations;
+
+public class SubscriptionService : ISubscriptionService
 {
-    public class SubscriptionService : ISubscriptionService
-    {
-        private readonly SubscriptionDBAccessor _dbAccessor;
-        private readonly PlansConfiguration _plans;
-        private readonly IUserService _userService;
-        private readonly IRecurrentServiceManager _recurrentServiceManager;
-        private readonly ILogger<SubscriptionService> _logger;
+    private readonly SubscriptionDBAccessor _dbAccessor;
+    private readonly PlansConfiguration _plans;
+    private readonly IUserService _userService;
+    private readonly IRecurrentServiceManager _recurrentServiceManager;
+    private readonly ILogger<SubscriptionService> _logger;
         
         public SubscriptionService(IOptions<DbSettings> dbSettings, IOptions<SubscriptionsConfig> subscriptionsConfig,
             IOptions<PlansConfiguration> plans, IUserService userService,
@@ -49,7 +49,7 @@ namespace PaymentService.Services.Implementations
                 await _dbAccessor.SetUsage(userId, freePlanId);
             }
 
-            var subscriptionId = await _dbAccessor.SetFreeSubscription(freePlanId);
+        var subscriptionId = await _dbAccessor.SetFreeSubscription(freePlanId);
 
             return subscriptionId;
         }
@@ -202,4 +202,3 @@ namespace PaymentService.Services.Implementations
             return sale;
         }
     }
-}
