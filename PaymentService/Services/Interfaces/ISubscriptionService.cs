@@ -19,5 +19,8 @@ namespace PaymentService.Services.Interfaces
 
         [Queue("usages")]
         Task InsureSubscription(string userId, string planId);
+        
+        [Queue("expired_subscriptions")]
+        Task CancelExpiredSubscriptions();
     }
 }

@@ -3,7 +3,7 @@ using Hangfire.Mongo;
 using Hangfire.Mongo.Migration.Strategies;
 using Hangfire.Mongo.Migration.Strategies.Backup;
 using MongoDB.Driver;
-using PaymentService.Services.Implementations;
+using PaymentService.Services.Interfaces;
 
 namespace PaymentService.Extensions;
 
@@ -50,12 +50,12 @@ public static class HangfireServices
         {
             // Setting up queues for the Hangfire server
             serverOptions.Queues = new[] { "emails", "chargings", "usages", "expired_subscriptions" };
-            
+
             // Set Hangfire server name
             serverOptions.ServerName = "Hangfire.Mongo server 1";
         });
     }
-    
+
     /// <summary>
     /// Schedules a recurring job to cancel expired subscriptions on a minutely basis.
     /// </summary>
@@ -64,9 +64,7 @@ public static class HangfireServices
     {
         using var scope = app.ApplicationServices.CreateScope();
         var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-        recurringJobManager.AddOrUpdate<SubscriptionService>(
-            "CancellationSubscriptionsJob",
-            x => x.CancelExpiredSubscriptions(),
-            Cron.Minutely);
+        recurringJobManager.AddOrUpdate<ISubscriptionService>("CancellationSubscriptionsJob",
+            x => x.CancelExpiredSubscriptions(), () => "*/5 * * * *");
     }
 }
