@@ -1,4 +1,4 @@
-﻿namespace PaymentService.Services.Interfaces;
+﻿namespace PaymentService.Services.Robokassa.Interfaces;
 
 public interface IPaymentMailService
 {

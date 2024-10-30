@@ -1,5 +1,3 @@
-using Hangfire;
-using HangfireBasicAuthenticationFilter;
 using Hellang.Middleware.ProblemDetails;
 using MailSenderLibrary.Implementations;
 using MailSenderLibrary.Interfaces;
@@ -11,6 +9,9 @@ using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using PaymentService.Services.Providers;
 using PaymentService.Extensions;
+using PaymentService.Services.Robokassa.Implementations;
+using MailRecurringService = PaymentService.Services.Implementations.MailRecurringService;
+using UsageRecurringService = PaymentService.Services.Implementations.UsageRecurringService;
 
 BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeSerializer(MongoDB.Bson.BsonType.String));
@@ -31,24 +32,20 @@ builder.Services.AddHangfireServices(builder.Configuration);
 builder.Services.AddCorsServices();
 
 builder.Services.AddSingleton<MailRecurringService>();
-builder.Services.AddSingleton<ChargeRecurringService>();
 builder.Services.AddSingleton<UsageRecurringService>();
 builder.Services.AddSingleton<IEmailService, MailService>();
 builder.Services.AddSingleton<IUsageService, UsageService>();
 builder.Services.AddSingleton<IPlanService, PlanService>();
-builder.Services.AddSingleton<IPaymentMailService, PaymentMailService>();
-builder.Services.AddScoped<ISubscriptionProcessorService, RobokassaProcessorService>();
-builder.Services.AddScoped<ISubscriptionProcessorService, GooglePlayProcessorService>();
+builder.Services.AddScoped<RobokassaPaymentProcessor>();
 builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddSingleton<IRecurrentServiceManager, RecurrentServiceManager>();
 
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddHttpClient<RobokassaService>();
+builder.Services.AddHttpClient<RobokassaClient>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddProblemDetails(ProblemDetailsConfigurator.Configure);
 

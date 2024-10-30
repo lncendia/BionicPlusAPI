@@ -13,14 +13,12 @@ namespace PaymentService.Services.Implementations
         private readonly SubscriptionDBAccessor _dbAccessor;
         private readonly PlansConfiguration _plans;
         private readonly IUserService _userService;
-        private readonly IRecurrentServiceManager _recurrentServiceManager;
 
-        public SubscriptionService(IOptions<DbSettings> settings, IOptions<PlansConfiguration> plans, IUserService userService, IRecurrentServiceManager recurrentServiceManager)
+        public SubscriptionService(IOptions<DbSettings> settings, IOptions<PlansConfiguration> plans, IUserService userService)
         {
             _dbAccessor = new SubscriptionDBAccessor(settings.Value);
             _plans = plans.Value;
             _userService = userService;
-            _recurrentServiceManager = recurrentServiceManager;
         }
 
         public Task<Subscription> GetSubscription(string subId)
@@ -33,6 +31,7 @@ namespace PaymentService.Services.Implementations
         {
             var freePlanId = _plans.FreePlanId;
 
+            // TODO: определять как отменять подписку пользователя в зависимости о её вида
             _recurrentServiceManager.CancelAllRecurrentJobByUserId(userId);
 
             if (setupUsage && discardUsage)

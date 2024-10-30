@@ -1,4 +1,5 @@
 ﻿using Hangfire;
+using PaymentService.Services.Robokassa.Interfaces;
 
 namespace PaymentService.Services.Implementations
 {
@@ -15,7 +16,7 @@ namespace PaymentService.Services.Implementations
             var hours = utcNow.Hour;
             var minutes = utcNow.Minute;
 
-            RecurringJob.AddOrUpdate<PaymentMailService>($"{MOUNTHLY_PREFIX}_{userId}", x => x.SendRecurrentPaymentEmailAsync(emailAdress, nextSubDate, sum, subName), Cron.Monthly(day, hours, minutes));
+            RecurringJob.AddOrUpdate<IPaymentMailService>($"{MOUNTHLY_PREFIX}_{userId}", x => x.SendRecurrentPaymentEmailAsync(emailAdress, nextSubDate, sum, subName), Cron.Monthly(day, hours, minutes));
         }
 
         public void PlanMinutelyMail(string emailAdress, string userId, DateTime nextSubDate, string sum, string subName)
@@ -27,7 +28,7 @@ namespace PaymentService.Services.Implementations
             var minutes = utcNow.Minute;
 
 
-            RecurringJob.AddOrUpdate<PaymentMailService>($"Minute_{userId}", x => x.SendRecurrentPaymentEmailAsync(emailAdress, nextSubDate, sum, subName), "0 */3 * ? * *");
+            RecurringJob.AddOrUpdate<IPaymentMailService>($"Minute_{userId}", x => x.SendRecurrentPaymentEmailAsync(emailAdress, nextSubDate, sum, subName), "0 */3 * ? * *");
         }
 
         public void PlanYearlyMail(string emailAdress, string userId, DateTime nextSubDate, string sum, string subName)
@@ -38,7 +39,7 @@ namespace PaymentService.Services.Implementations
             var hours = utcNow.Hour;
             var minutes = utcNow.Minute;
 
-            RecurringJob.AddOrUpdate<PaymentMailService>($"{YEARLY_PREFIX}_{userId}", x => x.SendRecurrentPaymentEmailAsync(emailAdress, nextSubDate, sum, subName), Cron.Yearly(day, hours, minutes));
+            RecurringJob.AddOrUpdate<IPaymentMailService>($"{YEARLY_PREFIX}_{userId}", x => x.SendRecurrentPaymentEmailAsync(emailAdress, nextSubDate, sum, subName), Cron.Yearly(day, hours, minutes));
         }
 
         public void CancelMounthlyJob(string jobId)

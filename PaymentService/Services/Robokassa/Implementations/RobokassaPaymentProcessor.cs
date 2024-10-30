@@ -1,47 +1,43 @@
-using DomainObjects.Subscription;
+﻿using DomainObjects.Subscription;
 using IdentityLibrary;
 using Microsoft.AspNetCore.Identity;
 using PaymentService.Services.Interfaces;
+using PaymentService.Services.Robokassa.Implementations.Recurring;
+using PaymentService.Services.Robokassa.Interfaces;
 
-namespace PaymentService.Services.Implementations;
+namespace PaymentService.Services.Robokassa.Implementations;
 
-/// <summary>
-/// The class of processing payments received from Robokassa
-/// </summary>
-public class RobokassaProcessorService: ISubscriptionProcessorService
+public class RobokassaPaymentProcessor : IPaymentProcessor
 {
-    private readonly ISubscriptionService _subscriptionService;
-    private readonly MailRecurringService _mailService;
-    private readonly ILogger<RobokassaProcessorService> _logger;
-    private readonly ChargeRecurringService _chargeService;
-    private readonly UsageRecurringService _usageService;
-    private readonly UserManager<ApplicationUser> _userManager;
     private readonly IPaymentMailService _paymentMailService;
+    private readonly MailRecurringService _mailService;
+    private readonly ISubscriptionService _subscriptionService;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ChargeRecurringService _chargeService;
     private readonly IPlanService _planService;
-    
-    public RobokassaProcessorService(ISubscriptionService subscriptionService, UserManager<ApplicationUser> userManager,
-        IPaymentMailService paymentMailService, IPlanService planService,
-        ILogger<RobokassaProcessorService> logger, MailRecurringService mailService,
-        ChargeRecurringService chargeService, UsageRecurringService usageService)
+    private readonly UsageRecurringService _usageService;
+    private readonly ILogger<RobokassaPaymentProcessor> _logger;
+
+    public RobokassaPaymentProcessor(MailRecurringService mailRecurringService,
+        ISubscriptionService subscriptionService,
+        UserManager<ApplicationUser> userManager,
+        ChargeRecurringService chargeRecurringService,
+        IPlanService planService,
+        UsageRecurringService usageService,
+        ILogger<RobokassaPaymentProcessor> logger,
+        IPaymentMailService paymentMailService)
     {
+        _mailService = mailRecurringService;
         _subscriptionService = subscriptionService;
-        _userManager = userManager; 
+        _userManager = userManager;
+        _chargeService = chargeRecurringService;
+        _planService = planService;
+        _usageService = usageService;
         _logger = logger;
         _paymentMailService = paymentMailService;
-        _planService = planService;
-        _mailService = mailService;
-        _chargeService = chargeService;
-        _usageService = usageService;
     }
-    
-    /// <summary>
-    /// Processing the first subscription payment
-    /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="invoiceId"></param>
-    /// <param name="subscriptionId"></param>
-    /// <returns>Processing result</returns>
-    public async Task<bool> ProcessInitialPayment(string userId, string invoiceId, string subscriptionId)
+
+    public async Task<bool> ProcessInitialAsync(string userId, string invoiceId, string subscriptionId)
     {
         var user = await _userManager.FindByIdAsync(userId);
         
@@ -54,7 +50,7 @@ public class RobokassaProcessorService: ISubscriptionProcessorService
             return true;
         }
         
-        var processResult = await ProcessRenewalPayment(user, subscription, plan);
+        var processResult = await ProcessAsync(user, subscription, plan);
 
         if (!processResult) return false;
         
@@ -79,14 +75,8 @@ public class RobokassaProcessorService: ISubscriptionProcessorService
         return true;
     }
 
-    /// <summary>
-    /// Processing the subscription payment
-    /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="invoiceId"></param>
-    /// <param name="subscriptionId"></param>
-    /// <returns>Processing result</returns>
-    public async Task<bool> ProcessRenewalPayment(string userId, string invoiceId, string subscriptionId)
+    
+    public async Task<bool> ProcessAsync(string userId, string invoiceId, string subscriptionId)
     {
         var subscription = await _subscriptionService.GetSubscription(subscriptionId);
         
@@ -110,7 +100,7 @@ public class RobokassaProcessorService: ISubscriptionProcessorService
         return true;
     }
 
-    private async Task<bool> ProcessRenewalPayment(ApplicationUser user, Subscription subscription, Plan plan)
+    private async Task<bool> ProcessAsync(ApplicationUser user, Subscription subscription, Plan plan)
     {
         await _paymentMailService.SendSuccessPaymentEmailAsync(user.Email, subscription.CreationDate, subscription.ExpirationDate, plan.Name);
 
@@ -121,5 +111,16 @@ public class RobokassaProcessorService: ISubscriptionProcessorService
         _logger.LogInformation("Subscription {subscriptionId} activated by user {userId}", subscription.Id, user.Id);
         
         return true;
+    }
+    
+    public Task CancelAsync(string userId)
+    {
+        _chargeService.CancelMounthlyJob(userId);
+        _mailService.CancelMounthlyJob(userId);
+        _usageService.CancelMounthlyJob(userId);
+
+        _chargeService.CancelYearlyJob(userId);
+        _mailService.CancelYearlyJob(userId);
+        _usageService.CancelYearlyJob(userId);
     }
 }

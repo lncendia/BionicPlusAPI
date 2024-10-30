@@ -1,11 +1,12 @@
 ﻿using DomainObjects.Pregnancy.UserProfile;
-using DomainObjects.Subscription;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PaymentService.Models.Robokassa;
 using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using System.Security.Claims;
+using PaymentService.Services.Robokassa.Implementations;
+using PaymentService.Services.Robokassa.Implementations.Recurring;
+using PaymentService.Services.Robokassa.Interfaces;
 
 namespace PaymentService.Controllers
 {
@@ -13,18 +14,16 @@ namespace PaymentService.Controllers
     [ApiController]
     public class RobokassaController : Controller
     {
-        private readonly MailRecurringService _mailService;
-        private readonly RobokassaService _robokassaService;
+        private readonly RobokassaClient _robokassaService;
         private readonly IUserService _userService;
-        private readonly RobokassaProcessorService _subscriptionProcessorService;
+        private readonly RobokassaPaymentProcessor _paymentProcessor;
         private readonly ILogger<RobokassaController> _logger;
-
-        public RobokassaController(IUserService userService, MailRecurringService mailService, RobokassaService robokassaService, RobokassaProcessorService subscriptionProcessorService, ILogger<RobokassaController> logger)
+        
+        public RobokassaController(IUserService userService, RobokassaClient robokassaService, RobokassaPaymentProcessor paymentProcessor, ILogger<RobokassaController> logger)
         {
-            _mailService = mailService;
             _robokassaService = robokassaService;
             _userService = userService;
-            _subscriptionProcessorService = subscriptionProcessorService;
+            _paymentProcessor = paymentProcessor;
             _logger = logger;
         }
 
@@ -64,16 +63,13 @@ namespace PaymentService.Controllers
             {
                 var sign = _robokassaService.VerifySignature(SignatureValue, OutSum, InvId, Shp_userId, Shp_isFirst, Shp_subscriptionId);
 
-                if (!sign)
-                {
-                    return BadRequest();
-                }
+                if (!sign) return BadRequest();
 
                 var isFirst = bool.Parse(Shp_isFirst);
 
                 _ = isFirst
-                    ? await _subscriptionProcessorService.ProcessInitialPayment(Shp_userId, InvId, Shp_subscriptionId)
-                    : await _subscriptionProcessorService.ProcessRenewalPayment(Shp_userId, InvId, Shp_subscriptionId);
+                    ? await _paymentProcessor.ProcessInitialAsync(Shp_userId, InvId, Shp_subscriptionId)
+                    : await _paymentProcessor.ProcessAsync(Shp_userId, InvId, Shp_subscriptionId);
 
                 return Ok($"OK{InvId}");
             }
