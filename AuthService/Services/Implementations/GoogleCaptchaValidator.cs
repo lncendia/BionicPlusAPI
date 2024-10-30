@@ -29,27 +29,21 @@ public class GoogleCaptchaValidator : ICaptchaValidator
     private readonly HttpClient _httpClient;
 
     /// <summary>
-    /// Интерфейс логгера
-    /// </summary>
-    private readonly ILogger<GoogleCaptchaValidator> _logger;
-    
-    /// <summary>
     /// Конструктор класса GoogleCaptchaValidator
     /// </summary>
     /// <param name="settingsConfig">Настройки приложения</param>
     /// <param name="httpClient">HTTP-клиент</param>
-    public GoogleCaptchaValidator(IOptions<SettingsConfig> settingsConfig, HttpClient httpClient, ILogger<GoogleCaptchaValidator> logger)
+    public GoogleCaptchaValidator(IOptions<SettingsConfig> settingsConfig, HttpClient httpClient)
     {
         _settings = settingsConfig.Value;
         _httpClient = httpClient;
-        _logger = logger;
     }
 
     /// <inheritdoc/>
     /// <summary>
     /// Валидирует капчу асинхронно
     /// </summary>
-    public async Task<bool> ValidateAsync(string captchaToken)
+    public async Task ValidateAsync(string captchaToken)
     {
         // Создаем строку запроса с параметрами
         var query = HttpUtility.ParseQueryString(string.Empty);
@@ -65,37 +59,37 @@ public class GoogleCaptchaValidator : ICaptchaValidator
         var responseBody = await response.Content.ReadAsStringAsync();
         var recaptchaResponse = JsonConvert.DeserializeObject<CaptchaResponse>(responseBody);
 
-        if (!recaptchaResponse!.Success)
-            CheckErrors(recaptchaResponse);
-
-        // Возвращаем результат валидации
-        return recaptchaResponse!.Success;
+        ThrowIfErrors(recaptchaResponse);
     }
 
-    private void CheckErrors(CaptchaResponse captchaResponse)
+    private static void ThrowIfErrors(CaptchaResponse? captchaResponse)
     {
-        if (captchaResponse.ErrorCodes == null || captchaResponse.ErrorCodes.Count == 0) return;
+        if (captchaResponse == null) throw new CaptchaException("Response is null");
+
+        if (captchaResponse.Success) return;
+        
+        if (captchaResponse.ErrorCodes == null) throw new CaptchaException("Response is null");
 
         var errorMessage = string.Join(", ", captchaResponse.ErrorCodes);
-        
-        if (captchaResponse.ErrorCodes.Contains("missing-input-secret") || 
+
+        if (captchaResponse.ErrorCodes.Contains("missing-input-secret") ||
             captchaResponse.ErrorCodes.Contains("invalid-input-secret"))
         {
             throw new CaptchaSecretException(errorMessage);
         }
-        
+
         if (captchaResponse.ErrorCodes.Contains("missing-input-response") ||
-                 captchaResponse.ErrorCodes.Contains("invalid-input-response"))
+            captchaResponse.ErrorCodes.Contains("invalid-input-response"))
         {
-            return;
+            throw new CaptchaValidationException(errorMessage);
         }
 
         if (captchaResponse.ErrorCodes.Contains("bad-request") ||
             captchaResponse.ErrorCodes.Contains("timeout-or-duplicate"))
         {
-            throw new CaptchaResponseException(errorMessage); 
+            throw new CaptchaResponseException(errorMessage);
         }
-        
+
         throw new CaptchaException(errorMessage);
     }
 }

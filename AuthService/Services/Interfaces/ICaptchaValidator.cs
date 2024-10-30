@@ -10,5 +10,5 @@ public interface ICaptchaValidator
     /// </summary>
     /// <param name="captureToken">Токен капчи для валидации</param>
     /// <returns>Задача, возвращающая true, если капча валидна, иначе false</returns>
-    Task<bool> ValidateAsync(string captureToken);
+    Task ValidateAsync(string captureToken);
 }

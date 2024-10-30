@@ -32,14 +32,14 @@ builder.Services.AddCorsServices();
 builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddScoped<IEmailService, MailService>();
 builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
-builder.Services.AddSingleton<ICaptchaValidator, CaptchaValidator>();
+builder.Services.AddSingleton<ICaptchaValidator, GoogleCaptchaValidator>();
 
 builder.Services.AddProblemDetails(ProblemDetailsConfigurator.Configure);
 
 builder.Services.AddHttpClient<ISubscriptionService, SubscriptionService>()
     .AddHttpMessageHandler<CurrentRequestBearerTokenProvider>();
 
-builder.Services.AddHttpClient<ICaptchaValidator, CaptchaValidator>();
+builder.Services.AddHttpClient<ICaptchaValidator, GoogleCaptchaValidator>();
 
 builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));

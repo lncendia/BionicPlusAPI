@@ -10,6 +10,11 @@ public class CaptchaResponseException : CaptchaException
     public CaptchaResponseException(string message) : base(message) { }
 }
 
+public class CaptchaValidationException : CaptchaException
+{
+    public CaptchaValidationException(string message) : base(message) { }
+}
+
 public class CaptchaException : Exception
 {
     public CaptchaException(string message) : base(message) { }

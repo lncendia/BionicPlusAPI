@@ -133,11 +133,10 @@ public class ProfileController : Controller
             return BadRequest("User not exist");
         }
 
-        if (user.TemperatureUnits != temperatureUnits)
-        {
-            user.TemperatureUnits = temperatureUnits;
-            await _userManager.UpdateAsync(user);
-        }
+        if (user.TemperatureUnits == temperatureUnits) return Ok();
+        
+        user.TemperatureUnits = temperatureUnits;
+        await _userManager.UpdateAsync(user);
         return Ok();
     }
 
@@ -152,11 +151,10 @@ public class ProfileController : Controller
             return BadRequest("User not exist");
         }
 
-        if (user.MeasureSystem != measureSystem)
-        {
-            user.MeasureSystem = measureSystem;
-            await _userManager.UpdateAsync(user);
-        }
+        if (user.MeasureSystem == measureSystem) return Ok();
+        
+        user.MeasureSystem = measureSystem;
+        await _userManager.UpdateAsync(user);
         return Ok();
     }
 
@@ -171,12 +169,11 @@ public class ProfileController : Controller
             return BadRequest("User not exist");
         }
 
-        if (user.UserAgreement.WhenOccured == null)
-        {
-            userAgreement.WhenOccured = DateTime.UtcNow;
-            user.UserAgreement = userAgreement;
-            await _userManager.UpdateAsync(user);
-        }
+        if (user.UserAgreement.WhenOccured != null) return Ok();
+        
+        userAgreement.WhenOccured = DateTime.UtcNow;
+        user.UserAgreement = userAgreement;
+        await _userManager.UpdateAsync(user);
 
         return Ok();
     }
