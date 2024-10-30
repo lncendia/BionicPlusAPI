@@ -16,15 +16,15 @@ namespace PaymentService.Controllers
         private readonly MailRecurringService _mailService;
         private readonly RobokassaService _robokassaService;
         private readonly IUserService _userService;
-        private readonly PaymentProcessorService _paymentProcessorService;
+        private readonly RobokassaProcessorService _subscriptionProcessorService;
         private readonly ILogger<RobokassaController> _logger;
 
-        public RobokassaController(IUserService userService, MailRecurringService mailService, RobokassaService robokassaService, PaymentProcessorService paymentProcessorService, ILogger<RobokassaController> logger)
+        public RobokassaController(IUserService userService, MailRecurringService mailService, RobokassaService robokassaService, RobokassaProcessorService subscriptionProcessorService, ILogger<RobokassaController> logger)
         {
             _mailService = mailService;
             _robokassaService = robokassaService;
             _userService = userService;
-            _paymentProcessorService = paymentProcessorService;
+            _subscriptionProcessorService = subscriptionProcessorService;
             _logger = logger;
         }
 
@@ -71,7 +71,9 @@ namespace PaymentService.Controllers
 
                 var isFirst = bool.Parse(Shp_isFirst);
 
-                await _paymentProcessorService.ProcessSuccessPayment(Shp_userId, InvId, isFirst, Shp_subscriptionId);
+                _ = isFirst
+                    ? await _subscriptionProcessorService.ProcessInitialPayment(Shp_userId, InvId, Shp_subscriptionId)
+                    : await _subscriptionProcessorService.ProcessRenewalPayment(Shp_userId, InvId, Shp_subscriptionId);
 
                 return Ok($"OK{InvId}");
             }

@@ -36,14 +36,13 @@ builder.Services.AddSingleton<UsageRecurringService>();
 builder.Services.AddSingleton<IEmailService, MailService>();
 builder.Services.AddSingleton<IUsageService, UsageService>();
 builder.Services.AddSingleton<IPlanService, PlanService>();
-builder.Services.AddSingleton<IRobokassaMailService, RobokassaMailService>();
-builder.Services.AddScoped<PaymentProcessorService>();
+builder.Services.AddSingleton<IPaymentMailService, PaymentMailService>();
+builder.Services.AddScoped<ISubscriptionProcessorService, RobokassaProcessorService>();
+builder.Services.AddScoped<ISubscriptionProcessorService, GooglePlayProcessorService>();
 builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IRecurrentServiceManager, RecurrentServiceManager>();
-                
-
 
 builder.Services.AddControllers();
 

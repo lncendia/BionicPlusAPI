@@ -5,7 +5,6 @@ using PaymentService.Models;
 using PaymentService.Services.Interfaces;
 using SubscriptionDBMongoAccessor;
 using SubscriptionDBMongoAccessor.Infrastracture;
-using System;
 
 namespace PaymentService.Services.Implementations
 {
@@ -59,27 +58,24 @@ namespace PaymentService.Services.Implementations
             return subscriptionId;
         }
 
-        public async Task<string> CreateSubscription(string planId, string invoiceId, string? promocode)
+        public async Task<string> CreateSubscription(CreateSubscriptionModel model)
         {
-            var subscriptionId = string.Empty;
-            if (promocode != null)
+            decimal sale = 0; 
+            
+            if (model.Promocode != null)
             {
-                var promoModel = await _dbAccessor.GetPromocode(promocode);
-                var plan = await _dbAccessor.GetPlan(planId);
-                var sale = CalculateSale(promoModel, plan);
-
-                subscriptionId = await _dbAccessor.CreateSubscription(planId, invoiceId, sale, promocode);
+                var promoModel = await _dbAccessor.GetPromocode(model.Promocode);
+                var plan = await _dbAccessor.GetPlan(model.PlanId);
+                sale = CalculateSale(promoModel, plan);
             }
-            else
-            {
-                subscriptionId = await _dbAccessor.CreateSubscription(planId, invoiceId, 0, promocode);
-            }
+            
+            var subscriptionId = await _dbAccessor.CreateSubscription(model, sale);
 
             return subscriptionId;
         }
 
         [Queue("usages")]
-        public async Task InsureSubscription(string userId, string planId)
+        public async Task InsureSubscription(string userId)
         {
             var subId = await _userService.GetActiveSubscription(userId);
 
@@ -111,7 +107,7 @@ namespace PaymentService.Services.Implementations
         {
             return await _dbAccessor.CheckInvoiceExist(invoiceId);
         }
-
+        
         public bool CancelAllUserRecurringJobs(string userId)
         {
             try

@@ -1,5 +1,6 @@
 ﻿using DomainObjects.Subscription;
 using Hangfire;
+using PaymentService.Models;
 
 namespace PaymentService.Services.Interfaces
 {
@@ -10,7 +11,7 @@ namespace PaymentService.Services.Interfaces
         Task<BillingPromocode> GetPromocode(string promocode);
         Task<PriceModel> CalculatePrice(string planId, string promocode);
         Task<string> SetSubscription(string userId, string planId, string subscriptionId);
-        Task<string> CreateSubscription(string planId, string invoiceId, string? promocode = null);
+        Task<string> CreateSubscription(CreateSubscriptionModel model);
         Task<string> ActivateSubscription(string subscriptionId);
         Task<string> DeactivateSubscription(string subscriptionId);
         bool CancelAllUserRecurringJobs(string userId);
@@ -18,6 +19,6 @@ namespace PaymentService.Services.Interfaces
         Task<bool> CheckInvoiceExist(int invoiceId);
 
         [Queue("usages")]
-        Task InsureSubscription(string userId, string planId);
+        Task InsureSubscription(string userId);
     }
 }

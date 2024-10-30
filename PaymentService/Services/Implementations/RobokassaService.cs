@@ -1,18 +1,13 @@
-﻿using Amazon.Runtime.Internal.Endpoints.StandardLibrary;
-using Amazon.Runtime.Internal.Transform;
-using DomainObjects.Subscription;
-using Hangfire;
+﻿using Hangfire;
 using Microsoft.Extensions.Options;
 using PaymentService.Models.Robokassa;
 using PaymentService.Services.Interfaces;
-using SubscriptionDBMongoAccessor;
-using SubscriptionDBMongoAccessor.Infrastracture;
-using System.Globalization;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Web;
+using PaymentService.Models;
 
 namespace PaymentService.Services.Implementations
 {
@@ -41,7 +36,7 @@ namespace PaymentService.Services.Implementations
             var merchantLogin = MERCHANT_LOGIN;
             var plan = await _planService.GetPlan(planId);
             var outSum = plan.Price.ToString("0.00");
-            var invId = await GetInvoiceId();
+            var invoiceId = await GetInvoiceId();
             var pass1 = _merchantInfo.Password1;
 
             var receipt = GetReceipt(plan.Price, plan.Name, 1);
@@ -50,15 +45,22 @@ namespace PaymentService.Services.Implementations
 
             var shp_userId = _httpContext.HttpContext!.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var subscriptionId = await _subscriptionService.CreateSubscription(planId, invId.ToString(), promocode);
+            var subscriptionModel = new CreateSubscriptionModel
+            {
+                PlanId = planId,
+                InvoiceId = invoiceId.ToString(),
+                Promocode = promocode
+            };
+            
+            var subscriptionId = await _subscriptionService.CreateSubscription(subscriptionModel);
 
             var shp_isFirst = true;
 
-            var signatureValue = $"{merchantLogin}:{outSum}:{invId}:{receiptUrlDecoded}:{pass1}:Shp_isFirst={shp_isFirst}:Shp_subscriptionId={subscriptionId}:Shp_userId={shp_userId}";
+            var signatureValue = $"{merchantLogin}:{outSum}:{invoiceId}:{receiptUrlDecoded}:{pass1}:Shp_isFirst={shp_isFirst}:Shp_subscriptionId={subscriptionId}:Shp_userId={shp_userId}";
 
             string hashedSignature = GetMD5Hash(signatureValue);
 
-            var robokassaInvoiceId = await GetRobokassaInvoiceId(hashedSignature, merchantLogin, outSum, invId, receiptUrlDecoded, shp_userId, shp_isFirst, subscriptionId);
+            var robokassaInvoiceId = await GetRobokassaInvoiceId(hashedSignature, merchantLogin, outSum, invoiceId, receiptUrlDecoded, shp_userId, shp_isFirst, subscriptionId);
 
             return ($"https://auth.robokassa.ru/Merchant/Index/{robokassaInvoiceId}", subscriptionId) ;
         }
@@ -86,9 +88,15 @@ namespace PaymentService.Services.Implementations
 
             var pass1 = _merchantInfo.Password1;
 
-            var invId = await GetInvoiceId();
+            var invoiceId = await GetInvoiceId();
 
-            var subscriptionId = await _subscriptionService.CreateSubscription(planId, invId.ToString());
+            var subscriptionModel = new CreateSubscriptionModel
+            {
+                PlanId = planId,
+                InvoiceId = invoiceId.ToString()
+            };
+            
+            var subscriptionId = await _subscriptionService.CreateSubscription(subscriptionModel);
 
             var receipt = GetReceipt(plan.Price, plan.Name, 1);
 
@@ -96,7 +104,7 @@ namespace PaymentService.Services.Implementations
 
             var shp_isFirst = false;
 
-            var signatureValue = $"{MERCHANT_LOGIN}:{outSum}:{invId}:{receiptUrlDecoded}:{pass1}:Shp_isFirst={shp_isFirst}:Shp_subscriptionId={subscriptionId}:Shp_userId={userId}";
+            var signatureValue = $"{MERCHANT_LOGIN}:{outSum}:{invoiceId}:{receiptUrlDecoded}:{pass1}:Shp_isFirst={shp_isFirst}:Shp_subscriptionId={subscriptionId}:Shp_userId={userId}";
 
             string hashedSignature = GetMD5Hash(signatureValue);
 
@@ -105,7 +113,7 @@ namespace PaymentService.Services.Implementations
                 { "MerchantLogin", MERCHANT_LOGIN },
                 { "OutSum", outSum },
                 { "PreviousInvoiceID", previousInvoiceId },
-                { "InvId", invId.ToString() },
+                { "InvId", invoiceId.ToString() },
                 { "Receipt", receiptUrlDecoded },
                 { "SignatureValue", hashedSignature },
                 { "Shp_isFirst", shp_isFirst.ToString() },

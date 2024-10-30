@@ -22,7 +22,7 @@ namespace PaymentService.Services.Implementations
             var hours = utcNow.Hour;
             var minutes = utcNow.Minute;
 
-            RecurringJob.AddOrUpdate<ISubscriptionService>($"{MOUNTHLY_PREFIX}_{userId}", x => x.InsureSubscription(userId, planId), Cron.Monthly(day, hours, minutes));
+            RecurringJob.AddOrUpdate<ISubscriptionService>($"{MOUNTHLY_PREFIX}_{userId}", x => x.InsureSubscription(userId), Cron.Monthly(day, hours, minutes));
         }
 
         public void PlanYearlyRefill(string userId, string planId)
@@ -33,7 +33,7 @@ namespace PaymentService.Services.Implementations
             var hours = utcNow.Hour;
             var minutes = utcNow.Minute;
 
-            RecurringJob.AddOrUpdate<ISubscriptionService>($"{YEARLY_PREFIX}_{userId}", x => x.InsureSubscription(userId, planId), Cron.Yearly(day, hours, minutes));
+            RecurringJob.AddOrUpdate<ISubscriptionService>($"{YEARLY_PREFIX}_{userId}", x => x.InsureSubscription(userId), Cron.Yearly(day, hours, minutes));
         }
 
         public bool FindJobById(string userId, bool isMountly)

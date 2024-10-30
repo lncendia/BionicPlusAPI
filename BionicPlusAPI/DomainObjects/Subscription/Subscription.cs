@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
 namespace DomainObjects.Subscription
 {
@@ -24,6 +19,9 @@ namespace DomainObjects.Subscription
         [JsonPropertyName("invoiceId")]
         public int InvoiceId { get; set; } 
 
+        [JsonPropertyName("transactionId")]
+        public string? TransactionId { get; set; }
+        
         [JsonPropertyName("status")]
         public SubscriptionStatus Status { get; set; } 
 

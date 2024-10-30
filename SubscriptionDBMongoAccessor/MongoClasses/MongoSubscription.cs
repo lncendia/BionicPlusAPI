@@ -28,6 +28,9 @@ namespace SubscriptionDBMongoAccessor.MongoClasses
 
         [BsonElement("invoiceId")]
         public int InvoiceId { get; set; } 
+        
+        [BsonElement("transactionId")]
+        public string? TransactionId { get; set; } 
 
         [BsonElement("status")]
         public SubscriptionStatus Status { get; set; }
