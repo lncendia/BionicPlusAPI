@@ -219,7 +219,7 @@ namespace SubscriptionDBMongoAccessor
             return (await _subscriptionsCollection.FindAsync(filter).Result.ToListAsync()).Select(s => s.Convert());
         }
 
-        public async Task<IEnumerable<Subscription>> GetExpiredPendingSubscriptions()
+        public async Task<long> UpdateExpiredPendingSubscriptionsToFailed()
         {
             var expiredDate = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(_cancellationTimeWaitingInMinutes));
 
@@ -228,7 +228,11 @@ namespace SubscriptionDBMongoAccessor
                 Builders<MongoSubscription>.Filter.Eq(s => s.Status, SubscriptionStatus.Pending)
             );
 
-            return (await _subscriptionsCollection.FindAsync(filter).Result.ToListAsync()).Select(s => s.Convert());
+            var update = Builders<MongoSubscription>.Update.Set(s => s.Status, SubscriptionStatus.Failed);
+
+            var result = await _subscriptionsCollection.UpdateManyAsync(filter, update);
+
+            return result.ModifiedCount;
         }
         
         public async Task<bool> CheckInvoiceExist(int invoice)

@@ -174,12 +174,11 @@ public class SubscriptionService : ISubscriptionService
     [Queue("expired_subscriptions")]
     public async Task CancelExpiredSubscriptions()
     {
-        var subscriptions = await _dbAccessor.GetExpiredPendingSubscriptions();
+        var updateSubscriptionsCount = await _dbAccessor.UpdateExpiredPendingSubscriptionsToFailed();
 
-        foreach (var subscription in subscriptions)
+        if (updateSubscriptionsCount > 0)
         {
-            await _dbAccessor.SetSubscriptionStatus(subscription.Id, SubscriptionStatus.Failed);
-            _logger.LogInformation("Subscription {id} has been cancelled.", subscription.Id);
+            _logger.LogInformation("{count} subscriptions mark as failed after expired", updateSubscriptionsCount);
         }
     }
 
