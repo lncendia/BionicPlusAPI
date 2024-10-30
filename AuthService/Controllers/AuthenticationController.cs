@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Security.Claims;
+using AuthService.Exceptions;
 using IdentityLibrary;
 
 namespace AuthService.Controllers;
@@ -103,18 +104,14 @@ public class AuthenticationController : ControllerBase
     {
         try
         {
-            // Проверка капчи
-            var isCaptchaValid = await _captchaValidator.ValidateAsync(req.Captcha);
+            // Проверяем капчу
+            var captchaResult = await ValidateCaptcha(req.Captcha);
 
             // Если капча не пройдена, возвращаем ошибку
-            if (!isCaptchaValid)
+            if (captchaResult != null)
             {
-                return BadRequest(new RegisterResponse
-                { 
-                    Success = false,
-                    Message = "Captcha was not validated",
-                    Code = AuthErrorCode.CaptchaNotPassed
-                });
+                // Если ответ не пустой, возвращаем его пользователю
+                return captchaResult;
             }
             
             // Поиск пользователя по email
@@ -130,11 +127,11 @@ public class AuthenticationController : ControllerBase
             // Возвращаем успешный ответ
             return Ok();
         }
+        // Handle exceptions
         catch (Exception ex)
         {
-            // Логирование ошибки и возврат сообщения об ошибке
             _logger.LogError(ex, "Произошла ошибка при запросе на восстановление пароля");
-            return BadRequest();
+            return StatusCode(500, "An error occurred. Please try again later.");
         }
     }
 
@@ -218,18 +215,13 @@ public class AuthenticationController : ControllerBase
 
         try
         {
-            // Проверка капчи
-            var isCaptchaValid = await _captchaValidator.ValidateAsync(register.Captcha);
+            // Проверяем капчу
+            var captchaResult = await ValidateCaptcha(register.Captcha);
 
-            // Если капча не пройдена, возвращаем ошибку
-            if (!isCaptchaValid)
+            // Если ответ не пустой, возвращаем его пользователю
+            if (captchaResult != null)
             {
-                return BadRequest(new RegisterResponse
-                {
-                    Success = false,
-                    Message = "Captcha was not validated",
-                    Code = AuthErrorCode.CaptchaNotPassed
-                });
+                return captchaResult;
             }
             
             // Поиск пользователя по email
@@ -592,5 +584,77 @@ public class AuthenticationController : ControllerBase
 
         // Возвращаем успешный ответ
         return Ok();
+    }
+
+    /// <summary>
+    /// Method validate and handle captcha errors
+    /// </summary>
+    /// <param name="captchaToken">Captcha result from user</param>
+    /// <returns>ActionResult or null</returns>
+    private async Task<ActionResult?> ValidateCaptcha(string captchaToken)
+    {
+        try
+        {
+            // Captcha validation
+            var isCaptchaValid = await _captchaValidator.ValidateAsync(captchaToken);
+
+            // If the captcha is not passed, we return an error
+            if (!isCaptchaValid)
+            {
+                return BadRequest(new RegisterResponse
+                {
+                    Success = false,
+                    Message = "Captcha was not validated",
+                    Code = AuthErrorCode.CaptchaNotPassed
+                });
+            }
+
+            // Return null result as successful 
+            return null;
+        }
+        // Handle http request error
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Http request error.");
+            return StatusCode(503, new RegisterResponse
+            {
+                Success = false,
+                Message = "Service Unavailable",
+                Code = AuthErrorCode.CaptchaNotPassed
+            });
+        }
+        // Handle secret-related errors (e.g., reconfigure captcha settings)
+        catch (CaptchaSecretException ex)
+        {
+            _logger.LogCritical(ex, "Critical captcha secret error.");
+            return BadRequest(new RegisterResponse
+            {
+                Success = false,
+                Message = "CAPTCHA error. Please try again.",
+                Code = AuthErrorCode.CaptchaNotPassed
+            });
+        }
+        // Handle response errors (e.g., ask the user to retry)
+        catch (CaptchaResponseException ex)
+        {
+            _logger.LogError(ex, "Invalid captcha response.");
+            return BadRequest(new RegisterResponse
+            {
+                Success = false,
+                Message = "Captcha was not validated",
+                Code = AuthErrorCode.CaptchaNotPassed
+            });
+        }
+        // Handle other captcha errors
+        catch (CaptchaException ex)
+        {
+            _logger.LogError(ex, "General captcha error.");
+            return BadRequest(new RegisterResponse
+            {
+                Success = false,
+                Message = "CAPTCHA error. Please try again.",
+                Code = AuthErrorCode.CaptchaNotPassed
+            });
+        }
     }
 }
