@@ -102,18 +102,14 @@ public class AuthenticationController : ControllerBase
     [Route("forgot/password/")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest req)
     {
+        // Проверяем капчу
+        var captchaResult = await ValidateCaptcha(req.Captcha);
+
+        // Если капча не пройдена, возвращаем ошибку
+        if (captchaResult != null) return captchaResult;
+        
         try
         {
-            // Проверяем капчу
-            var captchaResult = await ValidateCaptcha(req.Captcha);
-
-            // Если капча не пройдена, возвращаем ошибку
-            if (captchaResult != null)
-            {
-                // Если ответ не пустой, возвращаем его пользователю
-                return captchaResult;
-            }
-
             // Поиск пользователя по email
             var user = await _userManager.FindByEmailAsync(req.Email);
 
