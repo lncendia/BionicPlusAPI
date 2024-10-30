@@ -11,6 +11,9 @@ using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using PaymentService.Services.Providers;
 using PaymentService.Extensions;
+using PaymentService.Services.Robokassa.Implementations;
+using PaymentService.Services.Robokassa.Implementations.Recurring;
+using PaymentService.Services.Robokassa.Interfaces;
 
 BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeSerializer(MongoDB.Bson.BsonType.String));
@@ -37,7 +40,7 @@ builder.Services.AddSingleton<IEmailService, MailService>();
 builder.Services.AddSingleton<IUsageService, UsageService>();
 builder.Services.AddSingleton<IPlanService, PlanService>();
 builder.Services.AddSingleton<IRobokassaMailService, RobokassaMailService>();
-builder.Services.AddScoped<PaymentProcessorService>();
+builder.Services.AddScoped<RobokassaPaymentProcessor>();
 builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -49,7 +52,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddHttpClient<RobokassaService>();
+builder.Services.AddHttpClient<RobokassaClient>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddProblemDetails(ProblemDetailsConfigurator.Configure);
 
