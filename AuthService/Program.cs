@@ -36,6 +36,8 @@ builder.Services.AddSingleton<ICaptchaValidator, GoogleCaptchaValidator>();
 
 builder.Services.AddProblemDetails(ProblemDetailsConfigurator.Configure);
 
+// todo: HttpClient's логируют информацию о запросах как INFO. Нужно ограничить вывод логов.
+
 builder.Services.AddHttpClient<ISubscriptionService, SubscriptionService>()
     .AddHttpMessageHandler<CurrentRequestBearerTokenProvider>();
 
