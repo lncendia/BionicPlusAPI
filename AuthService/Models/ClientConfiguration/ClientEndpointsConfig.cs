@@ -46,9 +46,6 @@ public class ClientEndpointsConfig
     [JsonPropertyName("revokeTokensUrl")]
     public string RevokeTokensUrl => CalculateUrl(_endpointsConfig.RevokeTokensUrl, _reverseProxyConfig.LoginProxy);
 
-    [JsonPropertyName("sendCodeUrl")]
-    public string SendCodeUrl => CalculateUrl(_endpointsConfig.SendCodeUrl, _reverseProxyConfig.LoginProxy);
-
     [JsonPropertyName("confirmEmailUrl")]
     public string ConfirmEmailUrl => CalculateUrl(_endpointsConfig.ConfirmEmailUrl, _reverseProxyConfig.LoginProxy);
 

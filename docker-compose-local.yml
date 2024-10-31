@@ -1,0 +1,59 @@
+services:
+  authservice:
+    extends:
+      file: docker-compose.yml
+      service: authservice
+    ports: []
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - DBSETTINGS__CONNECTIONSTRING=mongodb://${INPUT_MONGO_DB_CREDS}@${INPUT_MONGO_DB_CLUSTER}/?retryWrites=true
+      - REVERSEPROXYCONFIG__LOGINPROXY=${INPUT_LOGIN_PROXY}
+      - REVERSEPROXYCONFIG__APIPROXY=${INPUT_API_PROXY}
+      - REVERSEPROXYCONFIG__PAYMENTPROXY=${INPUT_PAYMENT_PROXY}
+      
+  bionicplusapi:
+    extends:
+      file: docker-compose.yml
+      service: bionicplusapi
+    ports: []
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - DBSETTINGS__CONNECTIONSTRING=mongodb://${INPUT_MONGO_DB_CREDS}@${INPUT_MONGO_DB_CLUSTER}/?retryWrites=true
+      - REVERSEPROXYCONFIG__APIPROXY=${INPUT_API_PROXY}
+
+  paymentservice:
+    extends:
+      file: docker-compose.yml
+      service: paymentservice
+    ports: []
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - DBSETTINGS__CONNECTIONSTRING=mongodb://${INPUT_MONGO_DB_CREDS}@${INPUT_MONGO_DB_CLUSTER}/?retryWrites=true
+      - REVERSEPROXYCONFIG__PAYMENTPROXY=${INPUT_PAYMENT_PROXY}
+        
+  nginx:
+    image: nginx:latest
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ${APPDATA}/ASP.NET/https:/https:ro
+  
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: Buk7op
+      MONGO_INITDB_ROOT_PASSWORD: Hadofo42
+  
+  mongo-express:
+    image: mongo-express:latest
+    ports:
+      - "8085:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: Buk7op
+      ME_CONFIG_MONGODB_ADMINPASSWORD: Hadofo42
+      ME_CONFIG_MONGODB_URL: mongodb://Buk7op:Hadofo42@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
