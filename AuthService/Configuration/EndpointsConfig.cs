@@ -19,9 +19,6 @@ public class EndpointsConfig
     [JsonPropertyName("revokeTokensUrl")]
     public string RevokeTokensUrl { get; set; } = string.Empty;
 
-    [JsonPropertyName("sendCodeUrl")]
-    public string SendCodeUrl { get; set; } = string.Empty;
-
     [JsonPropertyName("confirmEmailUrl")]
     public string ConfirmEmailUrl { get; set; } = string.Empty;
 

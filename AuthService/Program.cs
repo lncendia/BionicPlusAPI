@@ -35,14 +35,16 @@ builder.Services.AddSingleton<ICaptchaValidator, CaptchaValidator>();
 
 builder.Services.AddScoped<IEmailService, MailService>();
 builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
+builder.Services.AddSingleton<ICaptchaValidator, GoogleCaptchaValidator>();
 
 builder.Services.AddProblemDetails(ProblemDetailsConfigurator.Configure);
 
+// todo: HttpClient's логируют информацию о запросах как INFO. Нужно ограничить вывод логов.
+
 builder.Services.AddHttpClient<IExternalOidcManager, ExternalOidcManager>();
-builder.Services.AddHttpClient<ICaptchaValidator, CaptchaValidator>();
 builder.Services.AddHttpClient<ISubscriptionService, SubscriptionService>()
     .AddHttpMessageHandler<CurrentRequestBearerTokenProvider>();
-
+builder.Services.AddHttpClient<ICaptchaValidator, GoogleCaptchaValidator>();
 
 builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));

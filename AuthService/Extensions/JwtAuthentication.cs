@@ -23,7 +23,7 @@ public static class JwtAuthentication
         var validIssuer = jwtConfigSection.GetValue<string>("ValidIssuer");
 
         // Получение значения ValidAudiences из конфигурации и разделение на массив строк
-        var validAudiences = jwtConfigSection.GetValue<string>("ValidAudiences").Split(",");
+        var validAudiences = jwtConfigSection.GetValue<string>("ValidAuthAudiences").Split(",");
 
         // Получение значения IssuerSigningKey из конфигурации
         var issuerSigningKey = jwtConfigSection.GetValue<string>("IssuerSigningKey");

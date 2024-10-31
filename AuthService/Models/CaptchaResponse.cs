@@ -20,5 +20,5 @@ public class CaptchaResponse
     public string Hostname { get; set; }
 
     [JsonProperty("error-codes")]
-    public List<string> ErrorCodes { get; set; }
+    public List<string>? ErrorCodes { get; set; }
 }
