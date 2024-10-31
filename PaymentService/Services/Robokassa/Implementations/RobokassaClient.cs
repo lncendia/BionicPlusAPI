@@ -75,7 +75,7 @@ public class RobokassaClient : IRobokassaClient
 
         var hashedSignature = GetMD5Hash(signatureValue);
 
-        return hashedSignature.ToUpper() == signature.ToUpper();
+        return string.Equals(hashedSignature, signature, StringComparison.CurrentCultureIgnoreCase);
     }
 
     [Queue("chargings")]
@@ -129,7 +129,7 @@ public class RobokassaClient : IRobokassaClient
         if (response.IsSuccessStatusCode)
         {
             var stringContent = await response.Content.ReadAsStringAsync();
-            _logger.LogInformation(stringContent);
+            _logger.LogInformation("{content}", stringContent);
             return true;
         }
 
@@ -138,7 +138,7 @@ public class RobokassaClient : IRobokassaClient
     
     private async Task<string> GetRobokassaInvoiceId(string signature, string merchantLogin, string outSum, int invId, string receipt, string shp_userId, bool shp_isFirst, string subscriptionId)
     {
-        var url = $"https://auth.robokassa.ru/Merchant/Indexjson.aspx";
+        var url = "https://auth.robokassa.ru/Merchant/Indexjson.aspx";
 
         var formValues = new Dictionary<string, string>
         {
@@ -216,19 +216,17 @@ public class RobokassaClient : IRobokassaClient
 
     private static string GetMD5Hash(string input)
     {
-        using (MD5 md5 = MD5.Create())
+        using MD5 md5 = MD5.Create();
+        var bytes = Encoding.UTF8.GetBytes(input);
+        var hashBytes = md5.ComputeHash(bytes);
+
+        var builder = new StringBuilder();
+
+        foreach (var t in hashBytes)
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(input);
-            byte[] hashBytes = md5.ComputeHash(bytes);
-
-            StringBuilder builder = new StringBuilder();
-
-            for (int i = 0; i < hashBytes.Length; i++)
-            {
-                builder.Append(hashBytes[i].ToString("x2"));
-            }
-
-            return builder.ToString();
+            builder.Append(t.ToString("x2"));
         }
+
+        return builder.ToString();
     }
 }

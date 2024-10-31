@@ -2,7 +2,9 @@
 using Hangfire;
 using Microsoft.Extensions.Options;
 using PaymentService.Models;
+using PaymentService.Services.GooglePlayBilling;
 using PaymentService.Services.Interfaces;
+using PaymentService.Services.Robokassa.Implementations;
 using SubscriptionDBMongoAccessor;
 using SubscriptionDBMongoAccessor.Infrastracture;
 
@@ -14,11 +16,18 @@ namespace PaymentService.Services.Implementations
         private readonly PlansConfiguration _plans;
         private readonly IUserService _userService;
 
-        public SubscriptionService(IOptions<DbSettings> settings, IOptions<PlansConfiguration> plans, IUserService userService)
+        private readonly IPaymentProcessor _googlePlayBillingProcessor;
+        private readonly IPaymentProcessor _robokassaPaymentProcessor;
+        
+        public SubscriptionService(IOptions<DbSettings> settings, IOptions<PlansConfiguration> plans, IUserService userService,
+            GooglePlayBillingProcessor googlePlayBillingProcessor, RobokassaPaymentProcessor robokassaPaymentProcessor)
         {
             _dbAccessor = new SubscriptionDBAccessor(settings.Value);
             _plans = plans.Value;
             _userService = userService;
+            
+            _googlePlayBillingProcessor = googlePlayBillingProcessor;
+            _robokassaPaymentProcessor = robokassaPaymentProcessor;
         }
 
         public Task<Subscription> GetSubscription(string subId)
@@ -27,12 +36,11 @@ namespace PaymentService.Services.Implementations
             return subscription;
         }
 
-        public async Task<string> SetFreeSubscription(string userId, bool setupUsage, bool discardUsage = true)
+        public async Task<string> CreateFreeSubscription(string userId, bool setupUsage, bool discardUsage = true)
         {
             var freePlanId = _plans.FreePlanId;
 
-            // TODO: определять как отменять подписку пользователя в зависимости о её вида
-            _recurrentServiceManager.CancelAllRecurrentJobByUserId(userId);
+            // TODO: не отменяются предыдущие подписки при их наличии
 
             if (setupUsage && discardUsage)
             {
@@ -48,11 +56,10 @@ namespace PaymentService.Services.Implementations
             return subscriptionId;
         }
 
-        public async Task<string> SetSubscription(string userId, string planId, string subscriptionId)
+        public async Task<string> SetSubscription(string userId, string planId, string subscriptionId, bool isFreePlan = false)
         {
             await _dbAccessor.SetUsage(userId, planId);
-           
-            var result = await _userService.SetSubscription(userId, subscriptionId, false);
+            await _userService.SetSubscription(userId, subscriptionId, isFreePlan);
 
             return subscriptionId;
         }
@@ -87,7 +94,7 @@ namespace PaymentService.Services.Implementations
             if (subscription.Status != SubscriptionStatus.ACTIVE)
             {
                 await DeactivateSubscription(subId);
-                var freeSubID = await SetFreeSubscription(userId, false);
+                var freeSubID = await CreateFreeSubscription(userId, false);
                 await _userService.SetSubscription(userId, freeSubID, true);
             }
         }
@@ -99,25 +106,33 @@ namespace PaymentService.Services.Implementations
 
         public async Task<string> DeactivateSubscription(string subscriptionId)
         {
-            return await _dbAccessor.ActivateSubscription(subscriptionId);
+            return await _dbAccessor.DeactivateSubscription(subscriptionId);
+        }
+
+        public async Task<string> CancelSubscription(string userId)
+        {
+            var freePlanId = _plans.FreePlanId;
+            var currentSubscription = await _dbAccessor.GetSubscription(userId);
+
+            switch (currentSubscription.PaymentServiceType)
+            {
+                case PaymentServiceType.Robokassa:
+                    await _robokassaPaymentProcessor.CancelAsync(userId);
+                    break;
+                case PaymentServiceType.GooglePlay:
+                    await _googlePlayBillingProcessor.CancelAsync(userId);
+                    break;
+            }
+            
+            var subscriptionId = await CreateFreeSubscription(userId, true, false);
+            await SetSubscription(userId, freePlanId, subscriptionId, true);
+            
+            return subscriptionId;
         }
 
         public async Task<bool> CheckInvoiceExist(int invoiceId)
         {
             return await _dbAccessor.CheckInvoiceExist(invoiceId);
-        }
-        
-        public bool CancelAllUserRecurringJobs(string userId)
-        {
-            try
-            {
-                _recurrentServiceManager.CancelAllRecurrentJobByUserId(userId);
-            }
-            catch(Exception ex)
-            {
-                return false;
-            }
-            return true;
         }
 
         public async Task<BillingPromocode> GetPromocode(string promocode)

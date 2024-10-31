@@ -30,14 +30,10 @@ public class GooglePlayBillingProcessor : IPaymentProcessor, IDisposable
 
     public async Task VerifyAsync(SubscriptionEvent @event)
     {
-        if (@event.SubscriptionNotification.NotificationType == SubscriptionNotificationType.Purchased)
-        {
-
-            await _androidPublisherService.Purchases.Subscriptions
-                .Acknowledge(new SubscriptionPurchasesAcknowledgeRequest(), @event.PackageName,
-                    @event.SubscriptionNotification.SubscriptionId, @event.SubscriptionNotification.PurchaseToken)
-                .ExecuteAsync();
-        }
+        await _androidPublisherService.Purchases.Subscriptions
+            .Acknowledge(new SubscriptionPurchasesAcknowledgeRequest(), @event.PackageName,
+                @event.SubscriptionNotification.SubscriptionId, @event.SubscriptionNotification.PurchaseToken)
+            .ExecuteAsync();
     }
 
     public Task VerifyAsync(Subscription subscription)
@@ -45,7 +41,7 @@ public class GooglePlayBillingProcessor : IPaymentProcessor, IDisposable
         throw new NotImplementedException();
     }
 
-    public Task ProcessAsync()
+    public Task ProcessAsync(string userId, string subscriptionId)
     {
         throw new NotImplementedException();
     }

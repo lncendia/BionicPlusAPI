@@ -54,5 +54,8 @@ namespace SubscriptionDBMongoAccessor.MongoClasses
         [BsonElement("promocode")]
         [BsonIgnoreIfDefault]
         public string? Promocode { get; set; }
+        
+        [BsonElement("paymentServiceType")]
+        public PaymentServiceType PaymentServiceType { get; set; }
     }
 }

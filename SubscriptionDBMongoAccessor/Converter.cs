@@ -1,10 +1,5 @@
 ﻿using DomainObjects.Subscription;
 using SubscriptionDBMongoAccessor.MongoClasses;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SubscriptionDBMongoAccessor
 {
@@ -67,6 +62,7 @@ namespace SubscriptionDBMongoAccessor
                 Discount = mongoSub.Discount,
                 Total = mongoSub.Total,
                 TransactionId = mongoSub.TransactionId,
+                PaymentServiceType = mongoSub.PaymentServiceType,
             };
         }
 
@@ -87,6 +83,7 @@ namespace SubscriptionDBMongoAccessor
                 Discount = sub.Discount,
                 Total = sub.Total,
                 TransactionId = sub.TransactionId,
+                PaymentServiceType = sub.PaymentServiceType,
             };
         }
 

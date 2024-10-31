@@ -1,12 +1,9 @@
 ﻿using DomainObjects.Pregnancy.UserProfile;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using System.Security.Claims;
 using PaymentService.Services.Robokassa.Implementations;
-using PaymentService.Services.Robokassa.Implementations.Recurring;
-using PaymentService.Services.Robokassa.Interfaces;
 
 namespace PaymentService.Controllers
 {
@@ -67,9 +64,8 @@ namespace PaymentService.Controllers
 
                 var isFirst = bool.Parse(Shp_isFirst);
 
-                _ = isFirst
-                    ? await _paymentProcessor.ProcessInitialAsync(Shp_userId, InvId, Shp_subscriptionId)
-                    : await _paymentProcessor.ProcessAsync(Shp_userId, InvId, Shp_subscriptionId);
+                if (!isFirst) await _paymentProcessor.InitialProcessAsync(Shp_userId, InvId, Shp_subscriptionId);
+                else await _paymentProcessor.ProcessAsync(Shp_userId, Shp_subscriptionId);
 
                 return Ok($"OK{InvId}");
             }
