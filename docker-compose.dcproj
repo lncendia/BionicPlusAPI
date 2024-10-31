@@ -9,6 +9,7 @@
     <DockerServiceName>authservice</DockerServiceName>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="docker-compose-local.yml" />
     <None Include="docker-compose.yml" />
     <None Include=".dockerignore" />
   </ItemGroup>
