@@ -4,25 +4,25 @@ using AuthService.Configuration;
 namespace AuthService.Models.ClientConfiguration;
 
 /// <summary>
-/// Конфигурация клиентских конечных точек.
+/// Configuration for client endpoints.
 /// </summary>
 public class ClientEndpointsConfig
 {
     /// <summary>
-    /// Конфигурация конечных точек.
+    /// Configuration for endpoints.
     /// </summary>
     private readonly EndpointsConfig _endpointsConfig;
 
     /// <summary>
-    /// Конфигурация обратного прокси.
+    /// Configuration for reverse proxy.
     /// </summary>
     private readonly ReverseProxyConfig _reverseProxyConfig;
 
     /// <summary>
-    /// Конструктор класса ClientEndpointsConfig.
+    /// Constructor for the ClientEndpointsConfig class.
     /// </summary>
-    /// <param name="endpointsConfig">Конфигурация конечных точек.</param>
-    /// <param name="reverseProxyConfig">Конфигурация обратного прокси.</param>
+    /// <param name="endpointsConfig">Configuration for endpoints.</param>
+    /// <param name="reverseProxyConfig">Configuration for reverse proxy.</param>
     public ClientEndpointsConfig(EndpointsConfig endpointsConfig, ReverseProxyConfig reverseProxyConfig)
     {
         _endpointsConfig = endpointsConfig;
@@ -30,206 +30,210 @@ public class ClientEndpointsConfig
     }
 
     /// <summary>
-    /// Рассчитывает URL с использованием прокси.
+    /// Calculates the URL using the proxy.
     /// </summary>
-    /// <param name="url">Оригинальный URL.</param>
-    /// <param name="proxy">URL прокси.</param>
-    /// <returns>Новый URL с использованием прокси.</returns>
+    /// <param name="url">Original URL.</param>
+    /// <param name="proxy">Proxy URL.</param>
+    /// <returns>New URL using the proxy.</returns>
     private static string CalculateUrl(string url, string proxy)
     {
-        // Если прокси пуст, возвращаем оригинальный URL
+        // If the proxy is empty, return the original URL
         if (string.IsNullOrEmpty(proxy)) return url;
 
-        // Если оригинальный URL пуст, возвращаем его
+        // If the original URL is empty, return it
         if (string.IsNullOrEmpty(url)) return url;
 
-        // Разбираем оригинальный URL
+        // Parse the original URL
         var originalUri = new Uri(url);
 
-        // Разбираем новый базовый URL
+        // Parse the new base URL
         var newBaseUri = new Uri(proxy);
 
-        // Создаем новый URL с использованием пути оригинального URL и нового базового URL
+        // Create a new URL using the path of the original URL and the new base URL
         return newBaseUri.ToString().TrimEnd('/') + originalUri.PathAndQuery;
     }
 
     /// <summary>
-    /// URL для проверки аккаунта.
+    /// URL for checking the account.
     /// </summary>
     [JsonPropertyName("checkAccountUrl")]
     public string CheckAccountUrl => CalculateUrl(_endpointsConfig.CheckAccountUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для входа.
+    /// URL for login.
     /// </summary>
     [JsonPropertyName("loginUrl")]
     public string LoginUrl => CalculateUrl(_endpointsConfig.LoginUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для регистрации.
+    /// URL for registration.
     /// </summary>
     [JsonPropertyName("registerUrl")]
     public string RegisterUrl => CalculateUrl(_endpointsConfig.RegisterUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для обновления токенов.
+    /// URL for refreshing tokens.
     /// </summary>
     [JsonPropertyName("refreshTokensUrl")]
     public string RefreshTokensUrl => CalculateUrl(_endpointsConfig.RefreshTokensUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для отзыва токенов.
+    /// URL for revoking tokens.
     /// </summary>
     [JsonPropertyName("revokeTokensUrl")]
     public string RevokeTokensUrl => CalculateUrl(_endpointsConfig.RevokeTokensUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для подтверждения email.
+    /// URL for confirming email.
     /// </summary>
     [JsonPropertyName("confirmEmailUrl")]
     public string ConfirmEmailUrl => CalculateUrl(_endpointsConfig.ConfirmEmailUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для повторной отправки кода.
+    /// URL for resending code.
     /// </summary>
     [JsonPropertyName("resendCodeUrl")]
     public string ResendCodeUrl => CalculateUrl(_endpointsConfig.ResendCodeUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для восстановления пароля.
+    /// URL for forgot password.
     /// </summary>
     [JsonPropertyName("forgotPasswordUrl")]
     public string ForgotPasswordUrl => CalculateUrl(_endpointsConfig.ForgotPasswordUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для восстановления пароля.
+    /// URL for recovering password.
     /// </summary>
     [JsonPropertyName("recoverPasswordUrl")]
-    public string RecoverPasswordUrl => CalculateUrl(_endpointsConfig.RecoverPasswordUrl, _reverseProxyConfig.LoginProxy);
+    public string RecoverPasswordUrl =>
+        CalculateUrl(_endpointsConfig.RecoverPasswordUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для изменения пароля.
+    /// URL for changing password.
     /// </summary>
     [JsonPropertyName("changePasswordUrl")]
     public string ChangePasswordUrl => CalculateUrl(_endpointsConfig.ChangePasswordUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для списка карт.
+    /// URL for card list.
     /// </summary>
     [JsonPropertyName("cardListUrl")]
     public string CardListUrl => CalculateUrl(_endpointsConfig.CardListUrl, _reverseProxyConfig.ApiProxy);
 
     /// <summary>
-    /// URL для карты.
+    /// URL for card.
     /// </summary>
     [JsonPropertyName("cardUrl")]
     public string CardUrl => CalculateUrl(_endpointsConfig.CardUrl, _reverseProxyConfig.ApiProxy);
 
     /// <summary>
-    /// URL для базовой карты.
+    /// URL for basic card.
     /// </summary>
     [JsonPropertyName("basicCardUrl")]
     public string BasicCardUrl => CalculateUrl(_endpointsConfig.BasicCardUrl, _reverseProxyConfig.ApiProxy);
 
     /// <summary>
-    /// URL для загрузки изображения.
+    /// URL for image upload.
     /// </summary>
     [JsonPropertyName("imageUploadUrl")]
     public string ImageUploadUrl => CalculateUrl(_endpointsConfig.ImageUploadUrl, _reverseProxyConfig.ApiProxy);
 
     /// <summary>
-    /// URL для профиля.
+    /// URL for profile.
     /// </summary>
     [JsonPropertyName("profileUrl")]
     public string ProfileUrl => CalculateUrl(_endpointsConfig.ProfileUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для обновления профиля.
+    /// URL for updating profile.
     /// </summary>
     [JsonPropertyName("profileUpdateUrl")]
     public string ProfileUpdateUrl => CalculateUrl(_endpointsConfig.ProfileUpdateUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для единиц профиля.
+    /// URL for profile units.
     /// </summary>
     [JsonPropertyName("profileUnitsUrl")]
     public string ProfileUnitsUrl => CalculateUrl(_endpointsConfig.ProfileUnitsUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для измерений профиля.
+    /// URL for profile measurement.
     /// </summary>
     [JsonPropertyName("profileMeasureUrl")]
     public string ProfileMeasureUrl => CalculateUrl(_endpointsConfig.ProfileMeasureUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
-    /// URL для опроса.
+    /// URL for survey.
     /// </summary>
     [JsonPropertyName("surveyUrl")]
     public string SurveyUrl => CalculateUrl(_endpointsConfig.SurveyUrl, _reverseProxyConfig.ApiProxy);
 
     /// <summary>
-    /// URL для ответа на опрос.
+    /// URL for survey answer.
     /// </summary>
     [JsonPropertyName("surveyAnswerUrl")]
     public string SurveyAnswerUrl => CalculateUrl(_endpointsConfig.SurveyAnswerUrl, _reverseProxyConfig.ApiProxy);
 
     /// <summary>
-    /// URL для списка опросов.
+    /// URL for survey list.
     /// </summary>
     [JsonPropertyName("surveyListUrl")]
     public string SurveyListUrl => CalculateUrl(_endpointsConfig.SurveyListUrl, _reverseProxyConfig.ApiProxy);
 
     /// <summary>
-    /// URL для отката опроса.
+    /// URL for survey rollback.
     /// </summary>
     [JsonPropertyName("surveyRollbackUrl")]
     public string SurveyRollbackUrl => CalculateUrl(_endpointsConfig.SurveyRollbackUrl, _reverseProxyConfig.ApiProxy);
 
     /// <summary>
-    /// URL для оценки опроса.
+    /// URL for survey rating.
     /// </summary>
     [JsonPropertyName("surveyRateUrl")]
     public string SurveyRateUrl => CalculateUrl(_endpointsConfig.SurveyRateUrl, _reverseProxyConfig.ApiProxy);
 
     /// <summary>
-    /// URL для беременности.
+    /// URL for pregnancy.
     /// </summary>
     [JsonPropertyName("pregnancyUrl")]
     public string PregnancyUrl => CalculateUrl(_endpointsConfig.PregnancyUrl, _reverseProxyConfig.ApiProxy);
 
     /// <summary>
-    /// URL для детей.
+    /// URL for children.
     /// </summary>
     [JsonPropertyName("childrenUrl")]
     public string ChildrenUrl => CalculateUrl(_endpointsConfig.ChildrenUrl, _reverseProxyConfig.ApiProxy);
 
     /// <summary>
-    /// URL для платежной службы.
+    /// URL for payment service.
     /// </summary>
     [JsonPropertyName("paymentServiceUrl")]
-    public string PaymentServiceUrl => CalculateUrl(_endpointsConfig.PaymentServiceUrl, _reverseProxyConfig.PaymentProxy);
+    public string PaymentServiceUrl =>
+        CalculateUrl(_endpointsConfig.PaymentServiceUrl, _reverseProxyConfig.PaymentProxy);
 
     /// <summary>
-    /// URL для подписки.
+    /// URL for subscription.
     /// </summary>
     [JsonPropertyName("subscriptionUrl")]
     public string SubscriptionUrl => CalculateUrl(_endpointsConfig.SubscriptionUrl, _reverseProxyConfig.PaymentProxy);
 
     /// <summary>
-    /// URL для оформления заказа через Robokassa.
+    /// URL for Robokassa checkout.
     /// </summary>
     [JsonPropertyName("robokassaCheckoutUrl")]
-    public string RobokassaCheckoutUrl => CalculateUrl(_endpointsConfig.RobokassaCheckoutUrl, _reverseProxyConfig.PaymentProxy);
+    public string RobokassaCheckoutUrl =>
+        CalculateUrl(_endpointsConfig.RobokassaCheckoutUrl, _reverseProxyConfig.PaymentProxy);
 
     /// <summary>
-    /// URL для промокода.
+    /// URL for promocode.
     /// </summary>
     [JsonPropertyName("promocodeUrl")]
     public string PromocodeUrl => CalculateUrl(_endpointsConfig.PromocodeUrl, _reverseProxyConfig.PaymentProxy);
 
     /// <summary>
-    /// URL для расчета цены.
+    /// URL for calculating price.
     /// </summary>
     [JsonPropertyName("calculatePriceUrl")]
-    public string CalculatePriceUrl => CalculateUrl(_endpointsConfig.CalculatePriceUrl, _reverseProxyConfig.PaymentProxy);
+    public string CalculatePriceUrl =>
+        CalculateUrl(_endpointsConfig.CalculatePriceUrl, _reverseProxyConfig.PaymentProxy);
 }

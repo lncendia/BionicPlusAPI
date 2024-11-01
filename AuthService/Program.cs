@@ -31,11 +31,10 @@ builder.Services.AddCorsServices();
 
 builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IExternalOidcManager, ExternalOidcManager>();
-builder.Services.AddSingleton<ICaptchaValidator, CaptchaValidator>();
+builder.Services.AddSingleton<ICaptchaValidator, GoogleCaptchaValidator>();
 
 builder.Services.AddScoped<IEmailService, MailService>();
 builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
-builder.Services.AddSingleton<ICaptchaValidator, GoogleCaptchaValidator>();
 
 builder.Services.AddProblemDetails(ProblemDetailsConfigurator.Configure);
 

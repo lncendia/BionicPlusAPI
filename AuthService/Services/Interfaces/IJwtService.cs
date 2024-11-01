@@ -12,8 +12,9 @@ public interface IJwtService
     /// </summary>
     /// <param name="principal">Объект ClaimsPrincipal, содержащий информацию о пользователе.</param>
     /// <param name="tokenId"></param>
+    /// <param name="idp"></param>
     /// <returns>Строка, представляющая токен доступа.</returns>
-    string GenerateAccessToken(ClaimsPrincipal principal, Guid tokenId);
+    string GenerateAccessToken(ClaimsPrincipal principal, Guid tokenId, string? idp = null);
 
     /// <summary>
     /// Получает объект ClaimsPrincipal из истекшего токена.

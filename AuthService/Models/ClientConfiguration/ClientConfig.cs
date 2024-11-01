@@ -4,24 +4,24 @@ using AuthService.Configuration;
 namespace AuthService.Models.ClientConfiguration;
 
 /// <summary>
-/// Конфигурация клиента.
+/// Configuration for client applications.
 /// </summary>
 public class ClientConfig
 {
     /// <summary>
-    /// Конфигурация конечных точек клиента.
+    /// Configuration for client endpoints.
     /// </summary>
     [JsonPropertyName("endpoints")]
     public ClientEndpointsConfig? Endpoints { get; set; }
 
     /// <summary>
-    /// Конфигурация настроек клиента.
+    /// Configuration for client settings.
     /// </summary>
     [JsonPropertyName("settings")]
     public ClientSettingsConfig? Settings { get; set; }
 
     /// <summary>
-    /// Конфигурация платежей.
+    /// Configuration for payments.
     /// </summary>
     [JsonPropertyName("payment")]
     public PaymentConfig? Payment { get; set; }

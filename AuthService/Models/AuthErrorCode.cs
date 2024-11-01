@@ -11,5 +11,8 @@ public enum AuthErrorCode
     PasswordMismatch = 6,
     InvalidToken = 7,
     CaptchaNotPassed = 8,
-    SecurityStampOutdated = 9
+    SecurityStampOutdated = 9,
+    UserLockedOut = 10,
+    DuplicateUserName = 11,
+    DuplicateEmail = 12,
 }

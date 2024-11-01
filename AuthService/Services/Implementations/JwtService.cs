@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using AuthService.Configuration;
 using AuthService.Services.Interfaces;
+using IdentityModel;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
@@ -29,7 +30,7 @@ public class JwtService : IJwtService, IDisposable
     /// Аудитории токена.
     /// </summary>
     private readonly string[] _audiences;
-    
+
     /// <summary>
     /// Издатель токена.
     /// </summary>
@@ -44,7 +45,7 @@ public class JwtService : IJwtService, IDisposable
     /// Время жизни токена обновления.
     /// </summary>
     private readonly TimeSpan _refreshTokenLifetime;
-    
+
     /// <summary>
     /// Объект для шифрования Aes.
     /// </summary>
@@ -70,7 +71,7 @@ public class JwtService : IJwtService, IDisposable
 
         // Формируем ключ для подписи сигнатуры и шифрования токена обновления
         var key = Encoding.UTF8.GetBytes(jwtConfig.Value.IssuerSigningKey);
-        
+
         // Создаем симметричный ключ безопасности на основе секретного ключа
         var securityKey = new SymmetricSecurityKey(key);
 
@@ -79,10 +80,10 @@ public class JwtService : IJwtService, IDisposable
 
         // Создаем объект для шифрования Aes
         _algorithm = Aes.Create();
-        
+
         // Устанавливаем ключ для шифрования токена обновления
         _algorithm.Key = key;
-        
+
         // Устанавливаем вектор инициализации
         _algorithm.IV = Convert.FromBase64String(jwtConfig.Value.RefreshTokenIV);
     }
@@ -91,16 +92,22 @@ public class JwtService : IJwtService, IDisposable
     /// <summary>
     /// Генерирует токен доступа на основе объекта ClaimsPrincipal.
     /// </summary>
-    public string GenerateAccessToken(ClaimsPrincipal principal, Guid tokenId)
+    public string GenerateAccessToken(ClaimsPrincipal principal, Guid tokenId, string? idp = null)
     {
         // Преобразуем ClaimsPrincipal в список Claims
         var claims = principal.Claims.ToList();
 
         // Добавляем утверждение JTI (JWT ID) с идентификатором токена
-        claims.Add(new Claim(JwtRegisteredClaimNames.Jti, tokenId.ToString()));
+        claims.Add(new Claim(JwtClaimTypes.JwtId, tokenId.ToString()));
         
+        // Добавляем утверждение IAT (IssuedAt) с временем выпуска токена
+        claims.Add(new Claim(JwtClaimTypes.IssuedAt, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString()));
+
+        // Добавляем утверждение IDP (Identity Provider) с провайдером аутентификации
+        if (idp != null) claims.Add(new Claim(JwtClaimTypes.IdentityProvider, idp));
+
         // Добавляем утверждения для каждой аудитории из списка аудиторий
-        claims.AddRange(_audiences.Select(audience => new Claim(JwtRegisteredClaimNames.Aud, audience)));
+        claims.AddRange(_audiences.Select(audience => new Claim(JwtClaimTypes.Audience, audience)));
 
         // Создаем токен JWT
         var accessToken = new JwtSecurityToken(
@@ -151,7 +158,7 @@ public class JwtService : IJwtService, IDisposable
 
         // Проверяем, что токен обновления еще не истек
         if (tokenPayload.Expiration < DateTime.Now) throw new SecurityTokenException("Invalid token");
-        
+
         // Настраиваем параметры валидации токена
         var tokenValidationParameters = new TokenValidationParameters
         {
@@ -170,7 +177,8 @@ public class JwtService : IJwtService, IDisposable
             var principal = _handler.ValidateToken(token, tokenValidationParameters, out var parsedToken);
 
             // Проверяем, что идентификатор токена можно преобразовать в Guid
-            if (!Guid.TryParse(parsedToken.Id, out var parsedTokenId)) throw new SecurityTokenException("Invalid token");
+            if (!Guid.TryParse(parsedToken.Id, out var parsedTokenId))
+                throw new SecurityTokenException("Invalid token");
 
             // Проверяем, что идентификатор токена совпадает с идентификатором токена обновления
             if (parsedTokenId != tokenPayload.TokenId) throw new SecurityTokenException("Invalid token");

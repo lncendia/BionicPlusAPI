@@ -85,10 +85,10 @@ public class ExternalOidcManager : IExternalOidcManager
         // Валидируем токен и получаем principal
         var principal = _handler.ValidateToken(identityToken, tokenValidationParameters, out _);
 
-        // Находим значение Subject в principal
+        // Находим идентификатор пользователя в principal
         var providerKey = principal.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        // Если Subject не найден, выбрасываем исключение
+        // Если идентификатор не найден, выбрасываем исключение
         if (string.IsNullOrEmpty(providerKey)) throw new SecurityTokenException("Invalid token");
 
         // Возвращаем информацию о внешнем входе

@@ -4,38 +4,38 @@ using AuthService.Configuration;
 namespace AuthService.Models.ClientConfiguration;
 
 /// <summary>
-/// Конфигурация настроек клиента.
+/// Configuration for client settings.
 /// </summary>
 public class ClientSettingsConfig
 {
     /// <summary>
-    /// Базовая конфигурация настроек.
+    /// Base configuration for settings.
     /// </summary>
     private readonly SettingsConfig _baseConfig;
 
     /// <summary>
-    /// Конструктор класса ClientSettingsConfig.
+    /// Constructor for the ClientSettingsConfig class.
     /// </summary>
-    /// <param name="config">Базовая конфигурация настроек.</param>
+    /// <param name="config">Base configuration for settings.</param>
     public ClientSettingsConfig(SettingsConfig config)
     {
         _baseConfig = config;
     }
 
     /// <summary>
-    /// Ключ для капчи.
+    /// Key for captcha.
     /// </summary>
     [JsonPropertyName("captchaKey")]
     public string CaptchaKey => _baseConfig.CaptchaKey;
-    
+
     /// <summary>
-    /// Идентификатор клиента Google для Веб.
+    /// Google client ID for Web.
     /// </summary>
     [JsonPropertyName("googleClientIdWeb")]
     public string GoogleClientIdWeb => _baseConfig.GoogleClientIdWeb;
-    
+
     /// <summary>
-    /// Идентификатор клиента Google для Android.
+    /// Google client ID for Android.
     /// </summary>
     [JsonPropertyName("googleClientIdAndroid")]
     public string GoogleClientIdAndroid => _baseConfig.GoogleClientIdAndroid;

@@ -1,7 +1,7 @@
 ﻿using System.Web;
 using AuthService.Configuration;
-using AuthService.Dtos;
 using AuthService.Exceptions;
+using AuthService.Models;
 using AuthService.Services.Interfaces;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
