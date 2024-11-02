@@ -52,10 +52,12 @@ namespace PaymentService.Controllers
         public async Task<IActionResult> CancelUserSubscription()
         {
             var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var subscriptionId = await _subscriptionService.CreateFreeSubscription(userId, true, false);
-            var result = await _userService.SetSubscription(userId, subscriptionId, isFreePlan: true);
+            var subscriptionId = await _userService.GetActiveSubscription(userId);
             
-            return Ok(result);
+            await _subscriptionService.DeactivateSubscription(subscriptionId);
+            _subscriptionService.CancelPaymentReccuringJobs(userId);
+            
+            return Ok();
         }
     }
 }

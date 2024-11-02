@@ -86,19 +86,19 @@ public class SubscriptionService : ISubscriptionService
     [Queue("usages")]
     public async Task InsureSubscription(string userId, string planId)
     {
-        var subId = await _userService.GetActiveSubscription(userId);
+        var subscriptionId = await _userService.GetActiveSubscription(userId);
 
-        if (subId == null)
+        if (subscriptionId == null)
         {
             return;
         }
 
-        var subscription = await GetSubscription(subId);
+        var subscription = await GetSubscription(subscriptionId);
         if (subscription.Status != SubscriptionStatus.Active)
         {
-            await DeactivateSubscription(subId);
-            var freeSubID = await CreateFreeSubscription(userId, false);
-            await _userService.SetSubscription(userId, freeSubID, true);
+            _recurrentServiceManager.CancelAllRecurrentJobByUserId(userId);
+            var freeSubscriptionId = await CreateFreeSubscription(userId, false);
+            await _userService.SetSubscription(userId, freeSubscriptionId, true);
         }
     }
 
@@ -107,9 +107,15 @@ public class SubscriptionService : ISubscriptionService
         return await _dbAccessor.SetSubscriptionStatus(subscriptionId, SubscriptionStatus.Active);
     }
 
-    public async Task<string> DeactivateSubscription(string subscriptionId)
+    public async Task<string> DeactivateSubscription(string subscriptionId) 
     {
         return await _dbAccessor.SetSubscriptionStatus(subscriptionId, SubscriptionStatus.Inactive);
+    }
+
+    public bool CancelPaymentReccuringJobs(string userId)
+    {
+        _recurrentServiceManager.CancelRecurringPaymentsJobByUserId(userId);
+        return true;
     }
 
     public async Task<bool> CheckInvoiceExist(int invoiceId)

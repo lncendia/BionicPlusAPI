@@ -14,7 +14,7 @@ namespace PaymentService.Services.Interfaces
         Task<string> ActivateSubscription(string subscriptionId);
         Task<string> DeactivateSubscription(string subscriptionId);
         bool CancelAllUserRecurringJobs(string userId);
-
+        bool CancelPaymentReccuringJobs(string userId);
         Task<bool> CheckInvoiceExist(int invoiceId);
 
         [Queue("usages")]
