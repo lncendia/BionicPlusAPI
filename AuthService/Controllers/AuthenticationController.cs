@@ -519,26 +519,17 @@ public class AuthenticationController : ControllerBase
         var user = await _userManager.FindByEmailAsync(email);
 
         // Если пользователь не найден, возвращаем ошибку
-        if (user == null)
-        {
-            return NotFound("The user was not found");
-        }
+        if (user == null) return NotFound("The user was not found");
 
         // Если email уже подтвержден, возвращаем ошибку
-        if (user.EmailConfirmed)
-        {
-            return BadRequest("The user's email has already been confirmed");
-        }
+        if (user.EmailConfirmed) return BadRequest("The user's email has already been confirmed");
 
         // Подтверждение email пользователя с использованием токена
         var confirmResult = await _userManager.ConfirmEmailAsync(user, token);
 
         // Если подтверждение не удалось, возвращаем ошибку
-        if (confirmResult.Succeeded != true)
-        {
-            return BadRequest("Token confirmation error");
-        }
-
+        if (confirmResult.Succeeded != true) return BadRequest("Token confirmation error");
+        
         // Возвращаем успешный ответ
         return Ok();
     }
@@ -559,10 +550,7 @@ public class AuthenticationController : ControllerBase
         var user = await _userManager.FindByNameAsync(username);
 
         // Если пользователь не найден, возвращаем ошибку
-        if (user == null)
-        {
-            return BadRequest("Пользователь не существует");
-        }
+        if (user == null) return NotFound("The user was not found");
 
         // Обновление SecurityStamp у пользователя
         await _userManager.UpdateSecurityStampAsync(user);
@@ -584,17 +572,10 @@ public class AuthenticationController : ControllerBase
         var user = await _userManager.FindByEmailAsync(email);
 
         // Если пользователь не найден, возвращаем ошибку
-        if (user == null)
-        {
-            return NotFound("The user was not found");
-        }
+        if (user == null) return NotFound("The user was not found");
 
         // Проверка, подтвержден ли уже email пользователя
-        if (user.EmailConfirmed)
-        {
-            // Если email уже подтвержден, возвращаем ошибку
-            return BadRequest("The user's email has already been confirmed");
-        }
+        if (user.EmailConfirmed) return BadRequest("The user's email has already been confirmed");
 
         // Генерация нового токена подтверждения email
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
