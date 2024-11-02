@@ -18,7 +18,8 @@ public class ProfileController : Controller
     private readonly ILogger<ProfileController> _logger;
     private readonly RoleManager<ApplicationRole> _roleManager;
 
-    public ProfileController(UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager, ISubscriptionService subscriptionService, ILogger<ProfileController> logger)
+    public ProfileController(UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager,
+        ISubscriptionService subscriptionService, ILogger<ProfileController> logger)
     {
         _roleManager = roleManager;
         _userManager = userManager;
@@ -38,35 +39,35 @@ public class ProfileController : Controller
             return BadRequest("User not exist");
         }
 
-        var roles = new List<ApplicationRole>(); 
+        var roles = new List<ApplicationRole>();
 
-        foreach(var roleId in user.Roles)
+        foreach (var roleId in user.Roles)
         {
             roles.Add(await _roleManager.FindByIdAsync(roleId.ToString()));
         }
-            
-            var subscription = await _subscriptionService.GetSubscription(user.BillingProfile!.ActiveSubscriptionId);
 
-            if (subscription == null)
-            {
-                _logger.LogError($"An error occurred while getting subscription for user: {user.Id}");
-                return NotFound("Subscription not exist");
-            }
+        var subscription = await _subscriptionService.GetSubscription(user.BillingProfile!.ActiveSubscriptionId);
 
-            var profile = new ProfileResponse
-            {
-                IsEmailConfirmed = user.EmailConfirmed,
-                TemperatureUnits = user.TemperatureUnits,
-                MeasureSystem = user.MeasureSystem,
-                Height = user.Height,
-                Statuses = user.Statuses,
-                Email = user.Email,
-                UserId = user.Id,
-                FullName = user.FullName,
-                Roles = roles,
-                PlanId = subscription.PlanId,
-                ProfileSubscription = new ProfileSubscription(subscription)
-            };
+        if (subscription == null)
+        {
+            _logger.LogError("An error occurred while getting subscription for user: {id}", user.Id);
+            return NotFound("Subscription not exist");
+        }
+
+        var profile = new ProfileResponse
+        {
+            IsEmailConfirmed = user.EmailConfirmed,
+            TemperatureUnits = user.TemperatureUnits,
+            MeasureSystem = user.MeasureSystem,
+            Height = user.Height,
+            Statuses = user.Statuses,
+            Email = user.Email,
+            UserId = user.Id,
+            FullName = user.FullName,
+            Roles = roles,
+            PlanId = subscription.PlanId,
+            ProfileSubscription = new ProfileSubscription(subscription)
+        };
 
         return Ok(profile);
     }
@@ -86,7 +87,8 @@ public class ProfileController : Controller
         try
         {
             var usage = await _subscriptionService.GetUsage(user.Id.ToString());
-            var subscription = await _subscriptionService.GetSubscription(user.BillingProfile?.ActiveSubscriptionId ?? "");
+            var subscription =
+                await _subscriptionService.GetSubscription(user.BillingProfile?.ActiveSubscriptionId ?? "");
 
             if (usage == null)
             {
@@ -96,7 +98,7 @@ public class ProfileController : Controller
 
             if (subscription == null)
             {
-                _logger.LogError("An error occurred while getting subscription for user: {id}",user.Id);
+                _logger.LogError("An error occurred while getting subscription for user: {id}", user.Id);
                 return NotFound("Subscription not exist");
             }
 
@@ -104,7 +106,7 @@ public class ProfileController : Controller
 
             if (plan == null)
             {
-                _logger.LogError("An error occurred while getting plan for user: {id}",user.Id);
+                _logger.LogError("An error occurred while getting plan for user: {id}", user.Id);
                 return NotFound($"Plan {subscription.PlanId} not exist");
             }
 
@@ -118,7 +120,7 @@ public class ProfileController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while getting planInfo for user: {id}",user.Id);
+            _logger.LogError(ex, "An error occurred while getting planInfo for user: {id}", user.Id);
             return NotFound("PlanInfo not found");
         }
     }
@@ -135,7 +137,7 @@ public class ProfileController : Controller
         }
 
         if (user.TemperatureUnits == temperatureUnits) return Ok();
-        
+
         user.TemperatureUnits = temperatureUnits;
         await _userManager.UpdateAsync(user);
         return Ok();
@@ -153,7 +155,7 @@ public class ProfileController : Controller
         }
 
         if (user.MeasureSystem == measureSystem) return Ok();
-        
+
         user.MeasureSystem = measureSystem;
         await _userManager.UpdateAsync(user);
         return Ok();
@@ -171,7 +173,7 @@ public class ProfileController : Controller
         }
 
         if (user.UserAgreement.WhenOccured != null) return Ok();
-        
+
         userAgreement.WhenOccured = DateTime.UtcNow;
         user.UserAgreement = userAgreement;
         await _userManager.UpdateAsync(user);
@@ -243,11 +245,11 @@ public class ProfileController : Controller
             var user = await _userManager.FindByNameAsync(username);
             await _userManager.DeleteAsync(user);
         }
-        catch(Exception)
+        catch (Exception)
         {
             return BadRequest();
         }
-            
+
         return Ok();
     }
 }

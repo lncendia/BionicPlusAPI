@@ -9,7 +9,7 @@ namespace PaymentService.Services.Interfaces
         Task<bool> SetSubscription(string userId, string subscriptionId, bool isFreePlan);
         Task<string?> GetActiveSubscription(string userId);
         Task<ApplicationUser> GetUserById(string id);
-        string GenerateUserHash(string userId);
-        bool VerifyUserHash(string userId, string hash);
+        string GenerateUserIdHash(string userId);
+        bool VerifyUserIdHash(string userId, string hash);
     }
 }

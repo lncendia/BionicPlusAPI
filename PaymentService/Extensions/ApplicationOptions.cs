@@ -21,7 +21,7 @@ public static class ApplicationOptions
             .ConfigurePlansSettings(configuration.GetSection("PlansConfiguration"))
 
             // Settings up jwt configuration
-            .ConfigureJwtSettings(configuration.GetSection("JwtConfig"))
+            .ConfigureEncryptionSettings(configuration.GetSection("JwtConfig"))
             
             // settings up merchant info
             .ConfigureMerchantInfoSettings(configuration.GetSection("MerchantInfo"))

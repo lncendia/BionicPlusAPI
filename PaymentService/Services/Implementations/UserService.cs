@@ -12,12 +12,12 @@ namespace PaymentService.Services.Implementations
     public class UserService : IUserService
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly JwtConfig _jwtConfig;
+        private readonly EncryptionConfig _encryptionConfig;
         
-        public UserService(UserManager<ApplicationUser> userManager, IOptions<JwtConfig> jwtConfig)
+        public UserService(UserManager<ApplicationUser> userManager, IOptions<EncryptionConfig> encryptionConfig)
         {
             _userManager = userManager;
-            _jwtConfig = jwtConfig.Value;
+            _encryptionConfig = encryptionConfig.Value;
         }
 
         public async Task<ApplicationUser> GetUserById(string id)
@@ -25,16 +25,16 @@ namespace PaymentService.Services.Implementations
             return await _userManager.FindByIdAsync(id);
         }
 
-        public string GenerateUserHash(string userId)
+        public string GenerateUserIdHash(string userId)
         {
             // Generating HMAC for verification
-            return userId.ComputeHmac(_jwtConfig.IssuerSigningKey);
+            return userId.ComputeHmac(_encryptionConfig.UserIdSigningKey);
         }
         
-        public bool VerifyUserHash(string userId, string hash)
+        public bool VerifyUserIdHash(string userId, string hash)
         {
             // Generating HMAC for verification
-            var computedHash = GenerateUserHash(userId);
+            var computedHash = GenerateUserIdHash(userId);
 
             // Hash Comparison
             return computedHash.Equals(hash);

@@ -14,9 +14,9 @@ public static class ServiceCollectionExtensions
         return services;
     }
     
-    public static IServiceCollection ConfigureJwtSettings(this IServiceCollection services, IConfigurationSection JwtSettingsSection)
+    public static IServiceCollection ConfigureEncryptionSettings(this IServiceCollection services, IConfigurationSection encryptionSection)
     {
-        services.Configure<JwtConfig>(JwtSettingsSection);
+        services.Configure<EncryptionConfig>(encryptionSection);
         return services;
     }
 
