@@ -28,3 +28,28 @@
     "expirationDate": "2024-11-25T10:28:16.2182903Z"
   }
 ```
+
+### PaymentService
+Появился новый роут для отмены подписки по ссылке:
+```
+/payment/api/Subscription/cancel?userId={userId}&hash={hash}language={langEnum}
+```
+
+### Docker-compose
+В docker-compose.yml появились новые поля для PaymentService:
+1. Время до истечения срока жизни открытой подписки (созданной, не оплаченной)
+2. Соль для шифрования хеша для проверки пользователя при отмене подписки из почтового письма
+
+```
+- SUBSCRIPTIONCONFIG__EXPIREDTIMEINMINUTS=30
+- ENCRYPTIONCONFIG__USERIDSIGNINGKEY=${INPUT_JWT_ISSUER_SIGNING_KEY}
+```
+
+### Subscription.Statuses
+Новые статусы подписки (добавился Failed): 
+```
+Active,
+Pending,
+Inactive,
+Failed
+```
