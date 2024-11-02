@@ -313,7 +313,7 @@ public class AuthenticationController : ControllerBase
         catch (Exception ex)
         {
             // Логирование ошибки и возврат сообщения об ошибке
-            _logger.LogError(ex, "Произошла ошибка при входе в систему");
+            _logger.LogError(ex, "An error occurred while logging in");
             return BadRequest(new LoginResponse { Success = false, Message = ex.Message });
         }
     }
