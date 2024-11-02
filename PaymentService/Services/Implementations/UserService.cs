@@ -3,16 +3,41 @@ using DomainObjects.Subscription;
 using Microsoft.AspNetCore.Identity;
 using PaymentService.Services.Interfaces;
 using IdentityLibrary;
+using Microsoft.Extensions.Options;
+using PaymentService.Extensions;
+using PaymentService.Models;
 
 namespace PaymentService.Services.Implementations
 {
     public class UserService : IUserService
     {
         private readonly UserManager<ApplicationUser> _userManager;
-
-        public UserService(UserManager<ApplicationUser> userManager)
+        private readonly JwtConfig _jwtConfig;
+        
+        public UserService(UserManager<ApplicationUser> userManager, IOptions<JwtConfig> jwtConfig)
         {
             _userManager = userManager;
+            _jwtConfig = jwtConfig.Value;
+        }
+
+        public async Task<ApplicationUser> GetUserById(string id)
+        {
+            return await _userManager.FindByIdAsync(id);
+        }
+
+        public string GenerateUserHash(string userId)
+        {
+            // Generating HMAC for verification
+            return userId.ComputeHmac(_jwtConfig.IssuerSigningKey);
+        }
+        
+        public bool VerifyUserHash(string userId, string hash)
+        {
+            // Generating HMAC for verification
+            var computedHash = GenerateUserHash(userId);
+
+            // Hash Comparison
+            return computedHash.Equals(hash);
         }
 
         public async Task<string?> GetActiveSubscription(string userId)

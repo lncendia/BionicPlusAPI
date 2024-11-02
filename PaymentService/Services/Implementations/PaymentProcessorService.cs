@@ -12,7 +12,7 @@ namespace PaymentService.Services.Implementations
         private readonly MailRecurringService _mailService;
         private readonly IRobokassaMailService _robokassaMailService;
         private readonly ISubscriptionService _subscriptionService;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IUserService _userService;
         private readonly ChargeRecurringService _chargeService;
         private readonly IPlanService _planService;
         private readonly UsageRecurringService _usageService;
@@ -21,7 +21,7 @@ namespace PaymentService.Services.Implementations
         public PaymentProcessorService(MailRecurringService mailRecurringService,
             IRobokassaMailService robokassaMailService,
             ISubscriptionService subscriptionService,
-            UserManager<ApplicationUser> userManager,
+            IUserService userService,
             ChargeRecurringService chargeRecurringService,
             IPlanService planService,
             UsageRecurringService usageService,
@@ -30,7 +30,7 @@ namespace PaymentService.Services.Implementations
             _mailService = mailRecurringService;
             _robokassaMailService = robokassaMailService;
             _subscriptionService = subscriptionService;
-            _userManager = userManager;
+            _userService = userService;
             _chargeService = chargeRecurringService;
             _planService = planService;
             _usageService = usageService;
@@ -48,7 +48,7 @@ namespace PaymentService.Services.Implementations
                     return true;
                 }
 
-                var user = await _userManager.FindByIdAsync(userId);
+                var user = await _userService.GetUserById(userId);
 
                 var userEmail = user.Email;
 
@@ -56,8 +56,10 @@ namespace PaymentService.Services.Implementations
 
                 var plan = await _planService.GetPlan(planId);
 
-                var successEmail = new SuccessPaymentEmailModel()
+                var successEmail = new SuccessPaymentEmailModel
                 {
+                    UserId = userId,
+                    Hash = _userService.GenerateUserHash(userId),
                     Email = userEmail,
                     SubStartDate = subscription.CreationDate,
                     SubEndDate = subscription.ExpirationDate,
@@ -72,8 +74,18 @@ namespace PaymentService.Services.Implementations
 
                 if (!isFirst) return true;
                 
-                //Recurrent notification about pay
-                _mailService.PlanMonthlyPaymentNotificationMail(userEmail, userId, subscription.ExpirationDate, plan.Price.ToString(CultureInfo.InvariantCulture), plan.Name);
+                var recurrentPaymentEmail = new RecurrentPaymentEmailModel
+                {
+                    UserId = userId,
+                    Hash = _userService.GenerateUserHash(userId),
+                    Email = userEmail,
+                    NextSubDate = subscription.ExpirationDate,
+                    Sum = plan.Price.ToString(CultureInfo.InvariantCulture),
+                    SubName = plan.Name,
+                };
+                
+                // Recurrent notification about pay
+                _mailService.PlanMonthlyPaymentNotificationMail(recurrentPaymentEmail);
 
                 if (plan == null)
                 {
@@ -82,7 +94,7 @@ namespace PaymentService.Services.Implementations
                 
                 var isMonthly = plan.BillingPeriod == BillingPeriod.m;
 
-                //Recurring charge
+                // Recurring charge
                 if (isMonthly)
                 {
                     _chargeService.PlanMonthlyCharge(userId, planId, invoiceId);
@@ -92,7 +104,7 @@ namespace PaymentService.Services.Implementations
                     _chargeService.PlanYearlyCharge(userId, planId, invoiceId);
                 }
 
-                //Recurring usage
+                // Recurring usage
                 if (isMonthly)
                 {
                     _usageService.PlanMonthlyRefill(userId, planId);

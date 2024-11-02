@@ -8,23 +8,15 @@ namespace PaymentService.Services.Implementations
         private const string MonthlyPrefix = "MounthlyEmailJob";
         private const string YearlyPrefix = "YearlyEmailJob";
 
-        public void PlanMonthlyPaymentNotificationMail(string emailAddress, string userId, DateTime nextSubDate, string sum, string subName)
+        public void PlanMonthlyPaymentNotificationMail(RecurrentPaymentEmailModel emailModel)
         {
             var utcNow = DateTime.UtcNow.AddDays(-14);
 
             var day = utcNow.Day;
             var hours = utcNow.Hour;
             var minutes = utcNow.Minute;
-
-            var sendRecurrentEmail = new RecurrentPaymentEmailModel()
-            {
-                Email = emailAddress,
-                NextSubDate = nextSubDate,
-                Sum = sum,
-                SubName = subName
-            };
             
-            RecurringJob.AddOrUpdate<RobokassaMailService>($"{MonthlyPrefix}_{userId}", x => x.SendRecurrentPaymentEmail(sendRecurrentEmail), Cron.Monthly(day, hours, minutes));
+            RecurringJob.AddOrUpdate<RobokassaMailService>($"{MonthlyPrefix}_{emailModel.UserId}", x => x.SendRecurrentPaymentEmail(emailModel), Cron.Monthly(day, hours, minutes));
         }
 
         public void CancelMounthlyJob(string jobId)

@@ -2,7 +2,6 @@
 using Hangfire;
 using MailSenderLibrary.Interfaces;
 using MailSenderLibrary.Models;
-using Newtonsoft.Json.Linq;
 using PaymentService.Constants;
 using PaymentService.Models.Emails;
 using PaymentService.Services.Interfaces;
@@ -55,7 +54,7 @@ namespace PaymentService.Services.Implementations
                         .Replace("{{subName}}", recurrentPaymentEmail.SubName)
                         .Replace("{{sum}}", recurrentPaymentEmail.Sum)
                         .Replace("{{nextSubDate}}", recurrentPaymentEmail.NextSubDate.ToString(dateFormat))
-                        .Replace("{{cancelSubscription}}", recurrentPaymentEmail.CancelSubscription);
+                        .Replace("{{cancelSubscription}}", recurrentPaymentEmail.GenerateCancelSubscriptionUrl());
                     
                     var recurrentMessage = MessageFormatter(recurrentPaymentEmail.Email, recurrentContent, "Уведомление о подписке");
                     return recurrentMessage;
@@ -67,7 +66,7 @@ namespace PaymentService.Services.Implementations
                         .Replace("{{subName}}", successPaymentEmail.SubName)
                         .Replace("{{subStartDate}}", successPaymentEmail.SubStartDate.ToString(dateFormat))
                         .Replace("{{subEndDate}}", successPaymentEmail.SubEndDate.ToString(dateFormat))
-                        .Replace("{{cancelSubscription}}", successPaymentEmail.CancelSubscription);
+                        .Replace("{{cancelSubscription}}", successPaymentEmail.GenerateCancelSubscriptionUrl());
                     
                     var successMessage = MessageFormatter(successPaymentEmail.Email, successContent, "Уведомление о подписке");
                     return successMessage;
@@ -79,7 +78,7 @@ namespace PaymentService.Services.Implementations
                         .Replace("{{subName}}", failedPaymentEmail.SubName)
                         .Replace("{{price}}", failedPaymentEmail.Price)
                         .Replace("{{discount}}", failedPaymentEmail.Discount)
-                        .Replace("{{totalPrice}}", failedPaymentEmail.CancelSubscription)
+                        .Replace("{{totalPrice}}", failedPaymentEmail.GenerateCancelSubscriptionUrl())
                         .Replace("{{tryDate}}", failedPaymentEmail.TryDate.ToString(dateFormat));
                     
                     var failedMessage = MessageFormatter(failedPaymentEmail.Email, failedContent, "Уведомление об ошибке");

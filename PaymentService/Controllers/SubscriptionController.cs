@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using PaymentService.Services.Interfaces;
 using System.Security.Claims;
+using DomainObjects.Pregnancy.Localizations;
+using PaymentService.Constants;
 
 namespace PaymentService.Controllers
 {
@@ -13,7 +15,7 @@ namespace PaymentService.Controllers
     {
         private readonly ISubscriptionService _subscriptionService;
         private readonly IUserService _userService;
-        
+
         public SubscriptionController(ISubscriptionService subscriptionService, IUserService userService)
         {
             _subscriptionService = subscriptionService;
@@ -42,7 +44,8 @@ namespace PaymentService.Controllers
         }
 
         [HttpGet("price/calculate", Name = "CalculatePrice")]
-        public async Task<IActionResult> CalculatePrice([FromQuery, Required] string promocode, [FromQuery, Required] string planId)
+        public async Task<IActionResult> CalculatePrice([FromQuery, Required] string promocode,
+            [FromQuery, Required] string planId)
         {
             var promocodeModel = await _subscriptionService.CalculatePrice(planId, promocode);
             return Ok(promocodeModel);
@@ -52,12 +55,59 @@ namespace PaymentService.Controllers
         public async Task<IActionResult> CancelUserSubscription()
         {
             var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var subscriptionId = await _userService.GetActiveSubscription(userId);
+            await CancelSubscription(userId);
+
+            return Ok();
+        }
+
+        [AllowAnonymous]
+        [HttpGet("cancel", Name = "CancelUserSubscription")]
+        public async Task<IActionResult> CancelUserSubscription([FromQuery, Required] string userId,
+            [FromQuery, Required] string hash,
+            [FromQuery] LocalizationsLanguage language = LocalizationsLanguage.en)
+        {
+            // Get user by id
+            var user = await _userService.GetUserById(userId);
+
+            // Verification of the users existence
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            // Verification user by hash
+            var hashVerificationResult = _userService.VerifyUserHash(userId, hash);
+
+            // Return unauthorized result
+            if (!hashVerificationResult)
+            {
+                return Unauthorized("Invalid signature.");
+            }
+
+            // Subscription cancellation logic
+            await CancelSubscription(userId);
             
+            var result = language switch
+            {
+                LocalizationsLanguage.en => SubscriptionCancellationAnswers.En,
+                LocalizationsLanguage.ru => SubscriptionCancellationAnswers.Ru,
+                _ => SubscriptionCancellationAnswers.En
+            };
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Method for cancellation user subscription
+        /// </summary>
+        /// <param name="userId">User id</param>
+        [NonAction]
+        public async Task CancelSubscription(string userId)
+        {
+            var subscriptionId = await _userService.GetActiveSubscription(userId);
+
             await _subscriptionService.DeactivateSubscription(subscriptionId);
             _subscriptionService.CancelPaymentReccuringJobs(userId);
-            
-            return Ok();
         }
     }
 }

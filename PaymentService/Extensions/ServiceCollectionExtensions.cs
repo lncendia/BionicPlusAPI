@@ -13,6 +13,12 @@ public static class ServiceCollectionExtensions
         services.Configure<DbSettings>(dbSettingsSection);
         return services;
     }
+    
+    public static IServiceCollection ConfigureJwtSettings(this IServiceCollection services, IConfigurationSection JwtSettingsSection)
+    {
+        services.Configure<JwtConfig>(JwtSettingsSection);
+        return services;
+    }
 
     public static IServiceCollection ConfigurePlansSettings(this IServiceCollection services, IConfigurationSection plansSettingsSection)
     {

@@ -20,6 +20,9 @@ public static class ApplicationOptions
             // Settings up plans configuration
             .ConfigurePlansSettings(configuration.GetSection("PlansConfiguration"))
 
+            // Settings up jwt configuration
+            .ConfigureJwtSettings(configuration.GetSection("JwtConfig"))
+            
             // settings up merchant info
             .ConfigureMerchantInfoSettings(configuration.GetSection("MerchantInfo"))
 
