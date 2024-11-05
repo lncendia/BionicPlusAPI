@@ -30,7 +30,7 @@ builder.Services.AddSwaggerServices(builder.Configuration);
 builder.Services.AddCorsServices();
 
 builder.Services.AddSingleton<IJwtService, JwtService>();
-builder.Services.AddSingleton<IExternalOidcManager, ExternalOidcManager>();
+builder.Services.AddTransient<IExternalManager, ExternalManager>();
 builder.Services.AddSingleton<ICaptchaValidator, GoogleCaptchaValidator>();
 
 builder.Services.AddScoped<IEmailService, MailService>();
@@ -40,7 +40,7 @@ builder.Services.AddProblemDetails(ProblemDetailsConfigurator.Configure);
 
 // todo: HttpClient's логируют информацию о запросах как INFO. Нужно ограничить вывод логов.
 
-builder.Services.AddHttpClient<IExternalOidcManager, ExternalOidcManager>();
+builder.Services.AddHttpClient<IExternalManager, ExternalManager>();
 builder.Services.AddHttpClient<ISubscriptionService, SubscriptionService>()
     .AddHttpMessageHandler<CurrentRequestBearerTokenProvider>();
 builder.Services.AddHttpClient<ICaptchaValidator, GoogleCaptchaValidator>();

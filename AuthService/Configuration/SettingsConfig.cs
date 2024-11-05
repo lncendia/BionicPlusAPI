@@ -9,13 +9,13 @@ public class SettingsConfig
     
     [JsonPropertyName("captchaSecret")]
     public string CaptchaSecret { get; set; } = string.Empty;
-    
-    [JsonPropertyName("allowedExternalOidcAudiences")]
-    public string AllowedExternalOidcAudiences { get; set; } = string.Empty;
 
     [JsonPropertyName("googleClientIdWeb")]
     public string GoogleClientIdWeb { get; set; } = string.Empty;
     
     [JsonPropertyName("googleClientIdAndroid")]
     public string GoogleClientIdAndroid { get; set; } = string.Empty;
+    
+    [JsonPropertyName("externalGoogleAudiences")]
+    public string ExternalGoogleAudiences { get; set; } = string.Empty;
 }

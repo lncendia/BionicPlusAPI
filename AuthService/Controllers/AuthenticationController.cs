@@ -58,9 +58,9 @@ public class AuthenticationController : ControllerBase
     private readonly ISubscriptionService _subscriptionService;
 
     /// <summary>
-    /// Сервис управления внешними OIDC-провайдерами.
+    /// Сервис управления внешними провайдерами.
     /// </summary>
-    private readonly IExternalOidcManager _externalOidcManager;
+    private readonly IExternalManager _externalManager;
 
     /// <summary>
     /// Логгер для логирования событий.
@@ -89,7 +89,7 @@ public class AuthenticationController : ControllerBase
     /// <param name="userClaimsPrincipalFactory">Фабрика для создания объектов ClaimsPrincipal.</param>
     /// <param name="captchaValidator">Сервис валидации капчи.</param>
     /// <param name="identityOptions">Конфигурация Identity.</param>
-    /// <param name="externalOidcManager">Сервис управления внешними OIDC-провайдерами.</param>
+    /// <param name="externalManager">Сервис управления внешними провайдерами.</param>
     public AuthenticationController(
         UserManager<ApplicationUser> userManager,
         IEmailService emailService,
@@ -100,7 +100,7 @@ public class AuthenticationController : ControllerBase
         IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory,
         ICaptchaValidator captchaValidator,
         IOptions<IdentityOptions> identityOptions,
-        IExternalOidcManager externalOidcManager)
+        IExternalManager externalManager)
     {
         _userManager = userManager;
         _emailService = emailService;
@@ -110,7 +110,7 @@ public class AuthenticationController : ControllerBase
         _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
         _captchaValidator = captchaValidator;
         _identityOptions = identityOptions.Value;
-        _externalOidcManager = externalOidcManager;
+        _externalManager = externalManager;
         _context = httpContextAccessor;
     }
 
@@ -336,32 +336,45 @@ public class AuthenticationController : ControllerBase
 
         try
         {
+            // Получаем процессор обработки внешней аутентификации
+            var externalProcessor = _externalManager.GetProcessor(login.Provider);
+
             // Расшифровываем и проверяем токен идентификации
-            var externalInfo = await _externalOidcManager.GetLoginInfoAsync(login.Provider, login.IdentityToken);
+            var externalInfo = await externalProcessor.GetLoginInfoAsync(login.IdentityToken);
 
             // Пытаемся получить пользователя по логину
             user = await _userManager.FindByLoginAsync(externalInfo.LoginProvider, externalInfo.ProviderKey);
 
+            // Пытаемся получить почту из утверждений, если почты нет - вызываем исключение
+            var email = externalInfo.Principal.FindFirstValue(ClaimTypes.Email);
+
+            // Если почта пользователя не найдена, возвращаем ошибку
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest(new RegisterResponse
+                {
+                    Success = false,
+                    Message = "The external authentication provider did not provide the user's email",
+                    Code = AuthErrorCode.InvalidToken
+                });
+            }
+
+            // Если не удалось найти пользователя по ключу внешнего провайдера
+            if (user == null)
+            {
+                // Находим пользователя с почтой, такой же как во внешнем провайдере
+                user = await _userManager.FindByEmailAsync(email);
+
+                // Если пользователь найден по email, добавляем внешнюю информацию о входе
+                if (user != null) await _userManager.AddLoginAsync(user, externalInfo);
+            }
+
             // Если пользователь еще не зарегистрирован - устанавливаем флаг, что ему необходимо установить подписку
             isNewUser = user == null;
 
-            // Создаем нового пользователя, если он еще не зарегистрирован
+            // Создаем нового пользователя, если в системе нет пользователя, который привязан к этому аккаунту или с такой же почтой
             if (user == null)
             {
-                // Пытаемся получить почту из утверждений, если почты нет - вызываем исключение
-                var email = externalInfo.Principal.FindFirstValue(ClaimTypes.Email);
-
-                // Если почта пользователя не найдена, возвращаем ошибку
-                if (string.IsNullOrEmpty(email))
-                {
-                    return BadRequest(new RegisterResponse
-                    {
-                        Success = false,
-                        Message = "The external authentication provider did not provide the user's email",
-                        Code = AuthErrorCode.InvalidToken
-                    });
-                }
-
                 // Создание нового пользователя
                 user = new ApplicationUser
                 {
@@ -403,6 +416,11 @@ public class AuthenticationController : ControllerBase
                 UserId = user.Id,
                 RefreshTokenExpiryTime = refreshTokenExpiryTime
             });
+        }
+        catch (KeyNotFoundException)
+        {
+            return BadRequest(new LoginResponse
+                { Success = false, Message = $"No provider named \"{login.Provider}\" was found" });
         }
         catch (Exception ex)
         {
@@ -452,7 +470,7 @@ public class AuthenticationController : ControllerBase
 
             // Обновляем утверждения о пользователе
             principal = await _userClaimsPrincipalFactory.CreateAsync(user);
-            
+
             // Создаем идентификатор токена
             var jti = Guid.NewGuid();
 
@@ -529,7 +547,7 @@ public class AuthenticationController : ControllerBase
 
         // Если подтверждение не удалось, возвращаем ошибку
         if (confirmResult.Succeeded != true) return BadRequest("Token confirmation error");
-        
+
         // Возвращаем успешный ответ
         return Ok();
     }
