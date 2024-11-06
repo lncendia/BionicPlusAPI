@@ -1,4 +1,3 @@
-using AuthService.Infrastracture;
 using AuthService.Services.Implementations;
 using AuthService.Services.Interfaces;
 using AuthService.Services.Providers;
@@ -7,6 +6,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System.Text.Json.Serialization;
 using AuthService.Extensions;
+using AuthService.Infrastructure;
 using NLog.Web;
 using MailSenderLibrary.Interfaces;
 using MailSenderLibrary.Implementations;
@@ -30,17 +30,19 @@ builder.Services.AddSwaggerServices(builder.Configuration);
 builder.Services.AddCorsServices();
 
 builder.Services.AddSingleton<IJwtService, JwtService>();
+builder.Services.AddTransient<IExternalManager, ExternalManager>();
+builder.Services.AddSingleton<ICaptchaValidator, GoogleCaptchaValidator>();
+
 builder.Services.AddScoped<IEmailService, MailService>();
 builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
-builder.Services.AddSingleton<ICaptchaValidator, GoogleCaptchaValidator>();
 
 builder.Services.AddProblemDetails(ProblemDetailsConfigurator.Configure);
 
 // todo: HttpClient's логируют информацию о запросах как INFO. Нужно ограничить вывод логов.
 
+builder.Services.AddHttpClient<IExternalManager, ExternalManager>();
 builder.Services.AddHttpClient<ISubscriptionService, SubscriptionService>()
     .AddHttpMessageHandler<CurrentRequestBearerTokenProvider>();
-
 builder.Services.AddHttpClient<ICaptchaValidator, GoogleCaptchaValidator>();
 
 builder.Services.AddControllers().AddJsonOptions(options =>

@@ -1,5 +1,4 @@
-﻿using AuthService.Models;
-using DomainObjects.Pregnancy.Localizations;
+﻿using DomainObjects.Pregnancy.Localizations;
 using MailSenderLibrary.Models;
 
 namespace AuthService.Services.Implementations

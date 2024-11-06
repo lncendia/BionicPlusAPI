@@ -29,7 +29,7 @@ public static class AspIdentity
                 ConnectionString = configuration.GetSection("DbSettings").GetValue<string>("ConnectionString"),
 
                 // Получение имени базы данных из конфигурации
-                DatabaseName = configuration.GetSection("DbSettings").GetValue<string>("Name"),
+                DatabaseName = configuration.GetSection("DbSettings").GetValue<string>("Name")
             },
 
             // Настройки опций Identity
@@ -67,6 +67,18 @@ public static class AspIdentity
 
                 // Тип утверждения для идентификатора пользователя
                 opt.ClaimsIdentity.UserIdClaimType = JwtRegisteredClaimNames.Sub;
+
+                // Тип утверждения для имени пользователя
+                opt.ClaimsIdentity.UserNameClaimType = JwtRegisteredClaimNames.Name;
+
+                // Тип утверждения для адреса электронной почты пользователя
+                opt.ClaimsIdentity.EmailClaimType = JwtRegisteredClaimNames.Email;
+
+                // Тип утверждения для роли пользователя
+                opt.ClaimsIdentity.RoleClaimType = "role";
+
+                // Тип утверждения для штампа безопасности
+                opt.ClaimsIdentity.SecurityStampClaimType = "stmp";
             }
         };
 

@@ -1,17 +1,18 @@
-﻿using Newtonsoft.Json.Schema;
+﻿namespace AuthService.Models;
 
-namespace AuthService.Models
+public enum AuthErrorCode
 {
-    public enum AuthErrorCode
-    {
-        Undefined = 0,
-        PasswordTooShort = 1,
-        PasswordRequiresNonAlphanumeric = 2,
-        PasswordRequiresUpper = 3,
-        PasswordIncorrect = 4,
-        UserNotExists = 5,
-        PasswordMismatch = 6,
-        InvalidToken = 7,
-        CaptchaNotPassed = 8,
-    }
+    Undefined = 0,
+    PasswordTooShort = 1,
+    PasswordRequiresNonAlphanumeric = 2,
+    PasswordRequiresUpper = 3,
+    PasswordIncorrect = 4,
+    UserNotExists = 5,
+    PasswordMismatch = 6,
+    InvalidToken = 7,
+    CaptchaNotPassed = 8,
+    SecurityStampOutdated = 9,
+    UserLockedOut = 10,
+    DuplicateUserName = 11,
+    DuplicateEmail = 12,
 }

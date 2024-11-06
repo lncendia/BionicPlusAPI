@@ -1,5 +1,4 @@
-﻿using AuthService.Dtos;
-using AuthService.Models;
+﻿using AuthService.Models;
 using AuthService.Services.Implementations;
 using AuthService.Services.Interfaces;
 using DomainObjects.Pregnancy.Localizations;
@@ -12,6 +11,7 @@ using System.Net;
 using System.Security.Claims;
 using AuthService.Exceptions;
 using IdentityLibrary;
+using Microsoft.Extensions.Options;
 
 namespace AuthService.Controllers;
 
@@ -26,6 +26,11 @@ public class AuthenticationController : ControllerBase
     /// Менеджер пользователей.
     /// </summary>
     private readonly UserManager<ApplicationUser> _userManager;
+
+    /// <summary>
+    /// Конфигурация Identity.
+    /// </summary>
+    private readonly IdentityOptions _identityOptions;
 
     /// <summary>
     /// Сервис для отправки электронной почты.
@@ -53,6 +58,11 @@ public class AuthenticationController : ControllerBase
     private readonly ISubscriptionService _subscriptionService;
 
     /// <summary>
+    /// Сервис управления внешними провайдерами.
+    /// </summary>
+    private readonly IExternalManager _externalManager;
+
+    /// <summary>
     /// Логгер для логирования событий.
     /// </summary>
     private readonly ILogger<AuthenticationController> _logger;
@@ -61,6 +71,11 @@ public class AuthenticationController : ControllerBase
     /// Доступ к HTTP контексту.
     /// </summary>
     private readonly IHttpContextAccessor _context;
+
+    /// <summary>
+    /// Значение утверждения для обозначения локального провайдера аутентификации (этого сервиса)
+    /// </summary>
+    private const string LocalIdp = "local";
 
     /// <summary>
     /// Конструктор контроллера аутентификации.
@@ -73,6 +88,8 @@ public class AuthenticationController : ControllerBase
     /// <param name="jwtService">Сервис для работы с JWT токенами.</param>
     /// <param name="userClaimsPrincipalFactory">Фабрика для создания объектов ClaimsPrincipal.</param>
     /// <param name="captchaValidator">Сервис валидации капчи.</param>
+    /// <param name="identityOptions">Конфигурация Identity.</param>
+    /// <param name="externalManager">Сервис управления внешними провайдерами.</param>
     public AuthenticationController(
         UserManager<ApplicationUser> userManager,
         IEmailService emailService,
@@ -81,7 +98,9 @@ public class AuthenticationController : ControllerBase
         ILogger<AuthenticationController> logger,
         IJwtService jwtService,
         IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory,
-        ICaptchaValidator captchaValidator)
+        ICaptchaValidator captchaValidator,
+        IOptions<IdentityOptions> identityOptions,
+        IExternalManager externalManager)
     {
         _userManager = userManager;
         _emailService = emailService;
@@ -90,6 +109,8 @@ public class AuthenticationController : ControllerBase
         _jwtService = jwtService;
         _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
         _captchaValidator = captchaValidator;
+        _identityOptions = identityOptions.Value;
+        _externalManager = externalManager;
         _context = httpContextAccessor;
     }
 
@@ -107,7 +128,7 @@ public class AuthenticationController : ControllerBase
 
         // Если капча не пройдена, возвращаем ошибку
         if (captchaResult != null) return captchaResult;
-        
+
         try
         {
             // Поиск пользователя по email
@@ -152,7 +173,7 @@ public class AuthenticationController : ControllerBase
             return BadRequest(new RegisterResponse
             {
                 Success = false,
-                Message = $"The password could not be restored {result.Errors?.FirstOrDefault()?.Description}",
+                Message = $"The password could not be restored: {result.Errors?.FirstOrDefault()?.Description}",
                 Code = Enum.Parse<AuthErrorCode>(result.Errors?.FirstOrDefault()?.Code ?? "")
             });
         }
@@ -186,7 +207,7 @@ public class AuthenticationController : ControllerBase
             return BadRequest(new RegisterResponse
             {
                 Success = false,
-                Message = $"The password could not be restored {result.Errors?.FirstOrDefault()?.Description}",
+                Message = $"The password could not be restored: {result.Errors?.FirstOrDefault()?.Description}",
                 Code = Enum.Parse<AuthErrorCode>(result.Errors?.FirstOrDefault()?.Code ?? "")
             });
         }
@@ -231,40 +252,51 @@ public class AuthenticationController : ControllerBase
         {
             // Поиск пользователя по email
             var user = await _userManager.FindByEmailAsync(login.Email);
+
+            // Проверяем, есть ли такой пользователь
             if (user == null)
             {
                 // Если пользователь не найден, возвращаем ошибку
                 return BadRequest(new LoginResponse
+                    { Success = false, Message = "The user does not exist", Code = AuthErrorCode.UserNotExists });
+            }
+
+            // Проверяем заблокирован ли пользователь 
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                // Если пароль неверен, возвращаем ошибку
+                return BadRequest(new LoginResponse
                 {
-                    Success = false, Message = "The user does not exist", Code = AuthErrorCode.UserNotExists
+                    Success = false, Message = $"The user is blocked until {user.LockoutEnd?.ToString("f")} UTC",
+                    Code = AuthErrorCode.UserLockedOut
                 });
             }
 
             // Проверка пароля пользователя
             if (!await _userManager.CheckPasswordAsync(user, login.Password))
             {
+                // Инкриминируем счетчик неудачных попыток
+                await _userManager.AccessFailedAsync(user);
+
                 // Если пароль неверен, возвращаем ошибку
                 return BadRequest(new LoginResponse
                     { Success = false, Message = "Invalid password", Code = AuthErrorCode.PasswordIncorrect });
             }
 
+            // Cбрасываем счетчик неудачных попыток входа
+            await _userManager.ResetAccessFailedCountAsync(user);
+
             // Создание объекта principal для пользователя
             var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
 
+            // Создаем идентификатор токена
+            var jti = Guid.NewGuid();
+
             // Генерация токена доступа
-            var token = _jwtService.GenerateAccessToken(principal);
+            var token = _jwtService.GenerateAccessToken(principal, jti, LocalIdp);
 
             // Генерация токена обновления и времени его истечения
-            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken();
-
-            // Устанавливаем новый токен обновления для пользователя
-            user.RefreshToken = refreshToken;
-
-            // Устанавливаем время истечения токена обновления
-            user.RefreshTokenExpiryTime = DateTime.Now.Add(refreshTokenExpiryTime);
-
-            // Обновляем информацию о пользователе в базе данных
-            await _userManager.UpdateAsync(user);
+            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken(jti);
 
             // Возвращаем успешный ответ с токенами и информацией о пользователе
             return Ok(new LoginResponse
@@ -275,7 +307,7 @@ public class AuthenticationController : ControllerBase
                 Email = user.Email,
                 Success = true,
                 UserId = user.Id,
-                RefreshTokenExpiryTime = (int)refreshTokenExpiryTime.TotalDays
+                RefreshTokenExpiryTime = refreshTokenExpiryTime
             });
         }
         catch (Exception ex)
@@ -286,50 +318,167 @@ public class AuthenticationController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Метод для обработки запроса на вход в систему.
+    /// </summary>
+    /// <param name="login">Объект, содержащий имя провайдера аутентификации и токен идентификации.</param>
+    /// <returns>Ответ с токенами доступа и обновления, если вход успешен, или сообщение об ошибке.</returns>
+    [HttpPost]
+    [Route("login/external")]
+    [ProducesResponseType(typeof(LoginResponse), (int)HttpStatusCode.OK)]
+    public async Task<IActionResult> LoginExternal([FromBody] LoginExternalRequest login)
+    {
+        // Создаем переменную для хранения пользователя
+        ApplicationUser? user = null;
+
+        // Создаем флаг, для того чтобы понимать, новый ли это пользователь
+        var isNewUser = false;
+
+        try
+        {
+            // Получаем процессор обработки внешней аутентификации
+            var externalProcessor = _externalManager.GetProcessor(login.Provider);
+
+            // Расшифровываем и проверяем токен идентификации
+            var externalInfo = await externalProcessor.GetLoginInfoAsync(login.IdentityToken);
+
+            // Пытаемся получить пользователя по логину
+            user = await _userManager.FindByLoginAsync(externalInfo.LoginProvider, externalInfo.ProviderKey);
+
+            // Пытаемся получить почту из утверждений, если почты нет - вызываем исключение
+            var email = externalInfo.Principal.FindFirstValue(ClaimTypes.Email);
+
+            // Если почта пользователя не найдена, возвращаем ошибку
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest(new RegisterResponse
+                {
+                    Success = false,
+                    Message = "The external authentication provider did not provide the user's email",
+                    Code = AuthErrorCode.InvalidToken
+                });
+            }
+
+            // Если не удалось найти пользователя по ключу внешнего провайдера
+            if (user == null)
+            {
+                // Находим пользователя с почтой, такой же как во внешнем провайдере
+                user = await _userManager.FindByEmailAsync(email);
+
+                // Если пользователь найден по email, добавляем внешнюю информацию о входе
+                if (user != null) await _userManager.AddLoginAsync(user, externalInfo);
+            }
+
+            // Если пользователь еще не зарегистрирован - устанавливаем флаг, что ему необходимо установить подписку
+            isNewUser = user == null;
+
+            // Создаем нового пользователя, если в системе нет пользователя, который привязан к этому аккаунту или с такой же почтой
+            if (user == null)
+            {
+                // Создание нового пользователя
+                user = new ApplicationUser
+                {
+                    Email = email,
+                    UserName = email,
+                    EmailConfirmed = true
+                };
+
+                // Регистрируем пользователя в системе
+                var result = await CreateUserAsync(user);
+
+                // Если произошла ошибка при регистрации - возвращаем ответ с ошибкой
+                if (result != null) return result;
+
+                // Связываем пользователя с внешним провайдером
+                await _userManager.AddLoginAsync(user, externalInfo);
+            }
+
+            // Создание объекта principal для пользователя
+            var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
+
+            // Создаем идентификатор токена
+            var jti = Guid.NewGuid();
+
+            // Генерация токена доступа
+            var token = _jwtService.GenerateAccessToken(principal, jti, login.Provider);
+
+            // Генерация токена обновления и времени его истечения
+            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken(jti);
+
+            // Возвращаем успешный ответ с токенами и информацией о пользователе
+            return Ok(new LoginResponse
+            {
+                AccessToken = token,
+                RefreshToken = refreshToken,
+                Message = "The login was completed successfully",
+                Email = user.Email,
+                Success = true,
+                UserId = user.Id,
+                RefreshTokenExpiryTime = refreshTokenExpiryTime
+            });
+        }
+        catch (KeyNotFoundException)
+        {
+            return BadRequest(new LoginResponse
+                { Success = false, Message = $"No provider named \"{login.Provider}\" was found" });
+        }
+        catch (Exception ex)
+        {
+            // Если пользователь был создан - удаляем его
+            if (user != null && isNewUser) await _userManager.DeleteAsync(user);
+
+            // Логирование ошибки и возврат сообщения об ошибке
+            _logger.LogError(ex, "An error occurred while logging in");
+            return BadRequest(new LoginResponse { Success = false, Message = ex.Message });
+        }
+    }
 
     /// <summary>
     /// Метод для обновления токена доступа.
     /// </summary>
-    /// <param name="tokenModel">Объект, содержащий текущие токены доступа и обновления.</param>
+    /// <param name="tokenRequest">Объект, содержащий текущие токены доступа и обновления.</param>
     /// <returns>Обновленные токены доступа и обновления, если запрос успешен, или сообщение об ошибке.</returns>
     [HttpPost]
     [Route("refresh")]
-    public async Task<IActionResult> RefreshToken(TokenModel tokenModel)
+    public async Task<IActionResult> RefreshToken(TokenRequest tokenRequest)
     {
         try
         {
             // Получение principal из истекшего токена доступа
-            var principal = _jwtService.GetPrincipalFromExpiredToken(tokenModel.AccessToken);
+            var principal =
+                _jwtService.GetPrincipalFromExpiredToken(tokenRequest.AccessToken, tokenRequest.RefreshToken);
 
-            // Поиск пользователя по имени из principal
-            var user = await _userManager.FindByNameAsync(principal.Identity!.Name!);
+            // Получение идентификатора пользователя из principal
+            var id = principal.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Проверка валидности пользователя и токенов
-            if (user == null || user.RefreshToken != tokenModel.RefreshToken ||
-                user.RefreshTokenExpiryTime <= DateTime.Now)
+            // Получение security stamp из principal
+            var securityStamp = principal.FindFirstValue(_identityOptions.ClaimsIdentity.SecurityStampClaimType);
+
+            // Поиск пользователя по идентификатору
+            var user = await _userManager.FindByIdAsync(id);
+
+            // Если пользователь не прошел проверку безопасности, возвращаем ошибку с сообщением
+            if (user == null || user.SecurityStamp != securityStamp)
             {
-                // Если пользователь не найден или токены недействительны, возвращаем ошибку
-                return BadRequest(new RefreshResponse
+                return BadRequest(new LoginResponse
                 {
                     Success = false,
-                    Message = "Invalid access token or update token"
+                    Message = "The security stamp is outdated. Please authenticate again",
+                    Code = AuthErrorCode.SecurityStampOutdated
                 });
             }
 
+            // Обновляем утверждения о пользователе
+            principal = await _userClaimsPrincipalFactory.CreateAsync(user);
+
+            // Создаем идентификатор токена
+            var jti = Guid.NewGuid();
+
             // Генерация нового токена доступа
-            var accessToken = _jwtService.GenerateAccessToken(principal);
+            var accessToken = _jwtService.GenerateAccessToken(principal, jti, LocalIdp);
 
             // Генерация нового токена обновления и времени его истечения
-            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken();
-
-            // Устанавливаем новый токен обновления для пользователя
-            user.RefreshToken = refreshToken;
-
-            // Устанавливаем время истечения токена обновления
-            user.RefreshTokenExpiryTime = DateTime.Now.Add(refreshTokenExpiryTime);
-
-            // Обновляем информацию о пользователе в базе данных
-            await _userManager.UpdateAsync(user);
+            var (refreshToken, refreshTokenExpiryTime) = _jwtService.GenerateRefreshToken(jti);
 
             // Возвращаем обновленные токены
             return Ok(new RefreshResponse
@@ -337,7 +486,7 @@ public class AuthenticationController : ControllerBase
                 Success = true,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                RefreshTokenExpiryTime = (int)refreshTokenExpiryTime.TotalDays
+                RefreshTokenExpiryTime = refreshTokenExpiryTime
             });
         }
         catch (Exception ex)
@@ -373,36 +522,6 @@ public class AuthenticationController : ControllerBase
             : new CheckEmailResponse { EmailStatus = EmailStatus.Created });
     }
 
-    /// <summary>
-    /// Метод для отзыва токена обновления у текущего пользователя.
-    /// </summary>
-    /// <returns>Ответ без содержимого, если операция успешна, или сообщение об ошибке.</returns>
-    [Authorize]
-    [HttpPost]
-    [Route("revoke")]
-    public async Task<IActionResult> Revoke()
-    {
-        // Получение имени текущего пользователя из контекста запроса
-        var username = HttpContext.User.Identity!.Name;
-
-        // Поиск пользователя по имени
-        var user = await _userManager.FindByNameAsync(username);
-
-        // Если пользователь не найден, возвращаем ошибку
-        if (user == null)
-        {
-            return BadRequest("The user does not exist");
-        }
-
-        // Отзыв токена обновления
-        user.RefreshToken = null;
-
-        // Обновление информации о пользователе в базе данных
-        await _userManager.UpdateAsync(user);
-
-        // Возвращаем ответ без содержимого
-        return NoContent();
-    }
 
     /// <summary>
     /// Метод для подтверждения email пользователя.
@@ -418,28 +537,44 @@ public class AuthenticationController : ControllerBase
         var user = await _userManager.FindByEmailAsync(email);
 
         // Если пользователь не найден, возвращаем ошибку
-        if (user == null)
-        {
-            return NotFound("The user was not found");
-        }
+        if (user == null) return NotFound("The user was not found");
 
         // Если email уже подтвержден, возвращаем ошибку
-        if (user.EmailConfirmed)
-        {
-            return BadRequest("The user's email has already been confirmed");
-        }
+        if (user.EmailConfirmed) return BadRequest("The user's email has already been confirmed");
 
         // Подтверждение email пользователя с использованием токена
         var confirmResult = await _userManager.ConfirmEmailAsync(user, token);
 
         // Если подтверждение не удалось, возвращаем ошибку
-        if (confirmResult.Succeeded != true)
-        {
-            return BadRequest("Token confirmation error");
-        }
+        if (confirmResult.Succeeded != true) return BadRequest("Token confirmation error");
 
         // Возвращаем успешный ответ
         return Ok();
+    }
+
+    /// <summary>
+    /// Метод для закрытия всех сессий.
+    /// </summary>
+    /// <returns>Ответ без содержимого, если операция успешна, или сообщение об ошибке.</returns>
+    [Authorize]
+    [HttpPost]
+    [Route("revokeAll")]
+    public async Task<IActionResult> RevokeAll()
+    {
+        // Получение имени текущего пользователя из контекста запроса
+        var username = HttpContext.User.Identity!.Name;
+
+        // Поиск пользователя по имени
+        var user = await _userManager.FindByNameAsync(username);
+
+        // Если пользователь не найден, возвращаем ошибку
+        if (user == null) return NotFound("The user was not found");
+
+        // Обновление SecurityStamp у пользователя
+        await _userManager.UpdateSecurityStampAsync(user);
+
+        // Возвращаем ответ без содержимого
+        return NoContent();
     }
 
     /// <summary>
@@ -455,17 +590,10 @@ public class AuthenticationController : ControllerBase
         var user = await _userManager.FindByEmailAsync(email);
 
         // Если пользователь не найден, возвращаем ошибку
-        if (user == null)
-        {
-            return NotFound("The user was not found");
-        }
+        if (user == null) return NotFound("The user was not found");
 
         // Проверка, подтвержден ли уже email пользователя
-        if (user.EmailConfirmed)
-        {
-            // Если email уже подтвержден, возвращаем ошибку
-            return BadRequest("The user's email has already been confirmed");
-        }
+        if (user.EmailConfirmed) return BadRequest("The user's email has already been confirmed");
 
         // Генерация нового токена подтверждения email
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -497,7 +625,7 @@ public class AuthenticationController : ControllerBase
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Http request error.");
-            return StatusCode(503, new RegisterResponse
+            return StatusCode(503, new BaseAuthResponse
             {
                 Success = false,
                 Message = "Service Unavailable",
@@ -507,7 +635,7 @@ public class AuthenticationController : ControllerBase
         // Handle validation exception
         catch (CaptchaValidationException)
         {
-            return BadRequest(new RegisterResponse
+            return BadRequest(new BaseAuthResponse
             {
                 Success = false,
                 Message = "Captcha was not validated",
@@ -518,7 +646,7 @@ public class AuthenticationController : ControllerBase
         catch (CaptchaSecretException ex)
         {
             _logger.LogCritical(ex, "Critical captcha secret error.");
-            return BadRequest(new RegisterResponse
+            return BadRequest(new BaseAuthResponse
             {
                 Success = false,
                 Message = "CAPTCHA error. Please try again.",
@@ -529,7 +657,7 @@ public class AuthenticationController : ControllerBase
         catch (CaptchaResponseException ex)
         {
             _logger.LogError(ex, "Invalid captcha response.");
-            return BadRequest(new RegisterResponse
+            return BadRequest(new BaseAuthResponse
             {
                 Success = false,
                 Message = "Captcha was not validated",
@@ -540,7 +668,7 @@ public class AuthenticationController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "General captcha error.");
-            return BadRequest(new RegisterResponse
+            return BadRequest(new BaseAuthResponse
             {
                 Success = false,
                 Message = "CAPTCHA error. Please try again.",
@@ -548,118 +676,126 @@ public class AuthenticationController : ControllerBase
             });
         }
     }
-    
-     /// <summary>
-    /// Метод для регистрации нового пользователя.
+
+    /// <summary>
+    /// Method for registering a new user.
     /// </summary>
-    /// <param name="register">Объект, содержащий данные для регистрации пользователя.</param>
-    /// <returns>Ответ с сообщением об успешной регистрации или сообщение об ошибке.</returns>
+    /// <param name="register">Object containing data for user registration.</param>
+    /// <returns>Response with a message about successful registration or an error message.</returns>
     [NonAction]
     private async Task<IActionResult> RegisterUser(RegisterRequest register)
     {
-        // Создаем переменную для хранения пользователя
+        // Create a variable to store the user
         ApplicationUser? user = null;
 
         try
         {
-            // Поиск пользователя по email
-            user = await _userManager.FindByEmailAsync(register.Email);
-
-            // Если пользователь уже существует, возвращаем ошибку
-            if (user != null)
-            {
-                return BadRequest(new RegisterResponse { Success = false, Message = "The user already exists" });
-            }
-
-            // Создание нового пользователя
+            // Create a new user
             user = new ApplicationUser
             {
                 Email = register.Email,
                 UserName = register.Email
             };
 
-            // Создание пользователя в системе
-            var createUserResult = await _userManager.CreateAsync(user, register.Password);
+            // Register the user in the system
+            var result = await CreateUserAsync(user);
 
-            // Если создание пользователя не удалось, возвращаем ошибку
-            if (!createUserResult.Succeeded)
-            {
-                return BadRequest(new RegisterResponse
-                {
-                    Success = false,
-                    Message =
-                        $"Failed to create a user {createUserResult.Errors?.FirstOrDefault()?.Description}",
-                    Code = Enum.Parse<AuthErrorCode>(createUserResult.Errors?.FirstOrDefault()?.Code ?? "")
-                });
-            }
+            // If an error occurred during registration, return the error response
+            if (result != null) return result;
 
-            // Создание объекта principal для пользователя
-            var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
-
-            // Генерация токена доступа
-            var token = _jwtService.GenerateAccessToken(principal);
-
-            // Добавление токена доступа в заголовки запроса
-            _context.HttpContext!.Request.Headers.Add("Authorization", $"Bearer {token}");
-
-            // Установка бесплатной подписки для пользователя
-            var subscriptionId = await _subscriptionService.SetFreeSubscription(user.Id.ToString());
-
-            // Если установка подписки не удалась, удаляем пользователя и возвращаем ошибку
-            if (subscriptionId == null)
-            {
-                await _userManager.DeleteAsync(user);
-                return BadRequest(new RegisterResponse
-                {
-                    Success = false,
-                    Message = "Failed to create a user. Can not set subscription"
-                });
-            }
-
-            // Установка профиля биллинга для пользователя
-            user.BillingProfile = new BillingProfile
-            {
-                ActiveSubscriptionId = subscriptionId,
-                isFreePlan = true,
-                SubscriptionIds = new List<string> { subscriptionId }
-            };
-
-            // Обновление информации о пользователе в базе данных
-            await _userManager.UpdateAsync(user);
-
-            // Добавление пользователя в роль "USER"
-            var addUserToRole = await _userManager.AddToRoleAsync(user, "USER");
-
-            // Если добавление пользователя в роль не удалось, удаляем пользователя и возвращаем ошибку
-            if (!addUserToRole.Succeeded)
-            {
-                await _userManager.DeleteAsync(user);
-                return BadRequest(new RegisterResponse
-                {
-                    Success = false,
-                    Message =
-                        $"The user could not be added to the role {addUserToRole.Errors?.FirstOrDefault()?.Description}"
-                });
-            }
-
-            // Генерация токена подтверждения email
+            // Generate an email confirmation token
             var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-            // Отправка email с токеном подтверждения
+            // Send an email with the confirmation token
             await _emailService.SendEmailAsync(
                 MailGenerator.GenerateTokenMessage(confirmToken, user.Email, LocalizationsLanguage.en));
 
-            // Возвращаем успешный ответ
+            // Return a successful response
             return Ok(new RegisterResponse { Success = true, Message = "The user has been successfully created" });
         }
         catch (Exception ex)
         {
-            // Если пользователь был создан - удаляем его
+            // If the user was created, delete them
             if (user != null) await _userManager.DeleteAsync(user);
 
-            // Логирование ошибки и возврат сообщения об ошибке
+            // Log the error and return an error message
             _logger.LogError(ex, "An error occurred during registration");
             return BadRequest(new RegisterResponse { Success = false, Message = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Asynchronously creates a new user in the system, sets up a free subscription, and assigns the user to the "USER" role.
+    /// </summary>
+    /// <param name="user">The user to be created.</param>
+    /// <param name="password">The password for the new user. Default is null.</param>
+    /// <returns>An ActionResult indicating the success or failure of the operation.</returns>
+    [NonAction]
+    private async Task<ActionResult?> CreateUserAsync(ApplicationUser user, string? password = null)
+    {
+        // Creating the user in the system
+        var createUserResult = await (password == null
+            ? _userManager.CreateAsync(user)
+            : _userManager.CreateAsync(user, password));
+
+        // If user creation failed, return an error
+        if (!createUserResult.Succeeded)
+        {
+            return BadRequest(new BaseAuthResponse
+            {
+                Success = false,
+                Message =
+                    $"Failed to create a user: {createUserResult.Errors?.FirstOrDefault()?.Description}",
+                Code = Enum.Parse<AuthErrorCode>(createUserResult.Errors?.FirstOrDefault()?.Code ?? "")
+            });
+        }
+
+        // Creating a principal object for the user
+        var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
+
+        // Generating an access token
+        var token = _jwtService.GenerateAccessToken(principal, Guid.NewGuid(), LocalIdp);
+
+        // Adding the access token to the request headers
+        _context.HttpContext!.Request.Headers.Add("Authorization", $"Bearer {token}");
+
+        // Setting a free subscription for the user
+        var subscriptionId = await _subscriptionService.SetFreeSubscription(user.Id.ToString());
+
+        // If setting the subscription failed, delete the user and return an error
+        if (subscriptionId == null)
+        {
+            await _userManager.DeleteAsync(user);
+            return BadRequest(new BaseAuthResponse
+            {
+                Success = false,
+                Message = "Failed to create a user. Can not set subscription"
+            });
+        }
+
+        // Setting the billing profile for the user
+        user.BillingProfile = new BillingProfile
+        {
+            ActiveSubscriptionId = subscriptionId,
+            isFreePlan = true,
+            SubscriptionIds = new List<string> { subscriptionId }
+        };
+
+        // Updating the user information in the database
+        await _userManager.UpdateAsync(user);
+
+        // Adding the user to the "USER" role
+        var addUserToRole = await _userManager.AddToRoleAsync(user, "USER");
+
+        // If adding the user to the role succeeded, return a successful result
+        if (addUserToRole.Succeeded) return null;
+
+        // If adding the user to the role failed, delete the user and return an error
+        await _userManager.DeleteAsync(user);
+        return BadRequest(new BaseAuthResponse
+        {
+            Success = false,
+            Message = $"The user could not be added to the role: {addUserToRole.Errors?.FirstOrDefault()?.Description}"
+        });
     }
 }

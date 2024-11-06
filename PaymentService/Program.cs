@@ -1,5 +1,3 @@
-using Hangfire;
-using HangfireBasicAuthenticationFilter;
 using Hellang.Middleware.ProblemDetails;
 using MailSenderLibrary.Implementations;
 using MailSenderLibrary.Interfaces;
