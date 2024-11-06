@@ -1,5 +1,5 @@
-﻿using AuthService.Constants;
 using DomainObjects.Pregnancy.Localizations;
+using AuthService.Constants;
 using MailSenderLibrary.Models;
 
 namespace AuthService.Services.Implementations
@@ -17,6 +17,6 @@ namespace AuthService.Services.Implementations
             return recurrentMessage;
         }
     
-        private static EmailMessage MessageFormatter(string email, string content, string subject) => new EmailMessage(new List<string> { email }, subject, content);
+        private static EmailMessage MessageFormatter(string email, string content, string subject) => new(new List<string> { email }, subject, content);
     }
 }

@@ -1,5 +1,4 @@
-﻿using AuthService.Dtos;
-using AuthService.Models;
+﻿using AuthService.Models;
 using AuthService.Services.Interfaces;
 using DomainObjects.Pregnancy.UserProfile;
 using IdentityLibrary;
@@ -16,12 +15,9 @@ public class ProfileController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ISubscriptionService _subscriptionService;
     private readonly ILogger<ProfileController> _logger;
-    private readonly RoleManager<ApplicationRole> _roleManager;
 
-    public ProfileController(UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager,
-        ISubscriptionService subscriptionService, ILogger<ProfileController> logger)
+    public ProfileController(UserManager<ApplicationUser> userManager, ISubscriptionService subscriptionService, ILogger<ProfileController> logger)
     {
-        _roleManager = roleManager;
         _userManager = userManager;
         _subscriptionService = subscriptionService;
         _logger = logger;
@@ -38,17 +34,10 @@ public class ProfileController : Controller
         {
             return BadRequest("User not exist");
         }
+        
+        var sub = await _subscriptionService.GetSubscription(user.BillingProfile!.ActiveSubscriptionId);
 
-        var roles = new List<ApplicationRole>();
-
-        foreach (var roleId in user.Roles)
-        {
-            roles.Add(await _roleManager.FindByIdAsync(roleId.ToString()));
-        }
-
-        var subscription = await _subscriptionService.GetSubscription(user.BillingProfile!.ActiveSubscriptionId);
-
-        if (subscription == null)
+        if (sub == null)
         {
             _logger.LogError("An error occurred while getting subscription for user: {id}", user.Id);
             return NotFound("Subscription not exist");
@@ -64,9 +53,10 @@ public class ProfileController : Controller
             Email = user.Email,
             UserId = user.Id,
             FullName = user.FullName,
-            Roles = roles,
-            PlanId = subscription.PlanId,
-            ProfileSubscription = new ProfileSubscription(subscription)
+            Roles = await _userManager.GetRolesAsync(user),
+            PlanId = sub.PlanId,
+            Logins = await _userManager.GetLoginsAsync(user),
+            ProfileSubscription = new ProfileSubscription(sub)
         };
 
         return Ok(profile);
