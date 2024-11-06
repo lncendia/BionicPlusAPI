@@ -82,7 +82,7 @@ public class JwtService : IJwtService, IDisposable
         _algorithm = Aes.Create();
 
         // Устанавливаем ключ для шифрования токена обновления
-        _algorithm.Key = key;
+        _algorithm.Key = Convert.FromBase64String(jwtConfig.Value.RefreshTokenKey);
 
         // Устанавливаем вектор инициализации
         _algorithm.IV = Convert.FromBase64String(jwtConfig.Value.RefreshTokenIV);

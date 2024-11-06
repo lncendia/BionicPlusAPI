@@ -25,9 +25,14 @@ public class JwtConfig
     /// </summary>
     public string IssuerSigningKey { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Ключ для токена обновления.
+    /// </summary>
+    public string RefreshTokenKey { get; set; } = string.Empty;
+    
     // ReSharper disable once InconsistentNaming
     /// <summary>
-    /// Вектор инициализации для обновления токена.
+    /// Вектор инициализации для токена обновления.
     /// </summary>
     public string RefreshTokenIV { get; set; } = string.Empty;
 
