@@ -1,4 +1,5 @@
-﻿using DomainObjects.Pregnancy.Localizations;
+﻿using System.Web;
+using DomainObjects.Pregnancy.Localizations;
 
 namespace PaymentService.Models.Emails;
 
@@ -7,15 +8,12 @@ namespace PaymentService.Models.Emails;
 /// </summary>
 public class PaymentEmailModel
 {
-    private const string CancelSubscriptionBaseUrl = "https://localhost/payment/api/Subscription/cancel";
-    
+    public string CancelSubscriptionBaseUrl { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public LocalizationsLanguage Language { get; } = LocalizationsLanguage.ru;
     public string UserId { get; set; } = string.Empty;
     public string Hash { get; set; } = string.Empty;
 
-    public string GenerateCancelSubscriptionUrl()
-    {
-        return $"{CancelSubscriptionBaseUrl}?userId={UserId}&hash={Hash.Replace("=", "%3D").Replace("+", "%2B")}&language={Language}";
-    } 
+    public string GenerateCancelSubscriptionUrl() =>
+        $"{CancelSubscriptionBaseUrl}?userId={UserId}&hash={HttpUtility.UrlEncode(Hash)}&language={Language}";
 }

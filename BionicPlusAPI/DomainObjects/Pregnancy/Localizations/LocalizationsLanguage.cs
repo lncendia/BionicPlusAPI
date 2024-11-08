@@ -1,26 +1,21 @@
-﻿
+﻿namespace DomainObjects.Pregnancy.Localizations;
 
-using Microsoft.VisualBasic;
-
-namespace DomainObjects.Pregnancy.Localizations
+public enum LocalizationsLanguage
 {
-    public enum LocalizationsLanguage
-    {
-        Undifined = 0,
-        ru = 1,
-        en = 2,
-    }
+    Undifined = 0,
+    ru = 1,
+    en = 2,
+}
 
-    public static class LocalizationsLanguageExtensions
+public static class LocalizationsLanguageExtensions
+{
+    public static string GetDateFormat(this LocalizationsLanguage language)
     {
-        public static string GetDateFormat(this LocalizationsLanguage language)
+        return language switch
         {
-            return language switch
-            {
-                LocalizationsLanguage.ru => "dd.MM.yyyy",
-                LocalizationsLanguage.en => "YYYY-MM-DD",
-                _ => throw new ArgumentException("Unknown localization language")
-            };
-        }
+            LocalizationsLanguage.ru => "dd.MM.yyyy",
+            LocalizationsLanguage.en => "MM/dd/yyyy",
+            _ => throw new ArgumentException("Unknown localization language")
+        };
     }
 }

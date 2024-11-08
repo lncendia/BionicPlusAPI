@@ -1,5 +1,7 @@
 ﻿using System.Globalization;
 using DomainObjects.Subscription;
+using Microsoft.Extensions.Options;
+using PaymentService.Models;
 using PaymentService.Services.Interfaces;
 using PaymentService.Models.Emails;
 
@@ -15,6 +17,7 @@ public class PaymentProcessorService
     private readonly IPlanService _planService;
     private readonly UsageRecurringService _usageService;
     private readonly ILogger<PaymentProcessorService> _logger;
+    private readonly EndpointsConfig _endpointsConfig;
 
     public PaymentProcessorService(MailRecurringService mailRecurringService,
         IRobokassaMailService robokassaMailService,
@@ -23,7 +26,8 @@ public class PaymentProcessorService
         ChargeRecurringService chargeRecurringService,
         IPlanService planService,
         UsageRecurringService usageService,
-        ILogger<PaymentProcessorService> logger)
+        ILogger<PaymentProcessorService> logger, 
+        IOptions<EndpointsConfig> endpointsConfig)
     {
         _mailService = mailRecurringService;
         _robokassaMailService = robokassaMailService;
@@ -33,6 +37,7 @@ public class PaymentProcessorService
         _planService = planService;
         _usageService = usageService;
         _logger = logger;
+        _endpointsConfig = endpointsConfig.Value;
     }
 
     public async Task<bool> ProcessSuccessPayment(string userId, string invoiceId, bool isFirst, string subscriptionId)
@@ -56,6 +61,7 @@ public class PaymentProcessorService
 
             var successEmail = new SuccessPaymentEmailModel
             {
+                CancelSubscriptionBaseUrl = _endpointsConfig.CancelSubscriptionBaseUrl,
                 UserId = userId,
                 Hash = _userService.GenerateUserIdHash(userId),
                 Email = userEmail,
@@ -74,6 +80,7 @@ public class PaymentProcessorService
                 
             var recurrentPaymentEmail = new RecurrentPaymentEmailModel
             {
+                CancelSubscriptionBaseUrl = _endpointsConfig.CancelSubscriptionBaseUrl,
                 UserId = userId,
                 Hash = _userService.GenerateUserIdHash(userId),
                 Email = userEmail,
