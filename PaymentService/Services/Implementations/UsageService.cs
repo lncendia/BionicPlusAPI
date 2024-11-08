@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using PaymentService.Services.Interfaces;
 using SubscriptionDBMongoAccessor;
 using SubscriptionDBMongoAccessor.Infrastracture;
-using SubscriptionsConfig = SubscriptionDBMongoAccessor.Infrastracture.SubscriptionsConfig;
 
 namespace PaymentService.Services.Implementations
 {
