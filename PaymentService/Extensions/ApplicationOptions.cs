@@ -1,35 +1,41 @@
 namespace PaymentService.Extensions;
 
 /// <summary>
-/// Статический класс для добавления настроек приложения в коллекцию служб
+/// Static class for adding application settings to a collection of services
 /// </summary>
 public static class ApplicationOptions
 {
     /// <summary>
-    /// Добавляет настройки приложения в коллекцию служб
+    /// Adds application settings to the services collection
     /// </summary>
-    /// <param name="services">Коллекция служб.</param>
-    /// <param name="configuration">Конфигурация приложения.</param>
+    /// <param name="services">Collection of servers</param>
+    /// <param name="configuration">Application configuration</param>
     public static void AddApplicationOptions(this IServiceCollection services, IConfiguration configuration)
     {
         services
 
-            // Настраиваем настройки базы данных
+            // Settings up database settings
             .ConfigureDbSettings(configuration.GetSection("DbSettings"))
 
-            // Настраиваем настройки планов
+            // Settings up plans configuration
             .ConfigurePlansSettings(configuration.GetSection("PlansConfiguration"))
 
-            // Настраиваем настройки информации о продавце
+            // Settings up jwt configuration
+            .ConfigureEncryptionSettings(configuration.GetSection("EncryptionConfig"))
+            
+            // settings up merchant info
             .ConfigureMerchantInfoSettings(configuration.GetSection("MerchantInfo"))
 
-            // Настраиваем разрешенные IP-адреса
+            // Settings up allowed IPs
             .ConfigureAllowedIps(configuration.GetSection("AllowedIps"))
 
-            // Настраиваем настройки SMTP-сервера
+            // Setting up SMTP-servers
             .ConfigureSmtpServer(configuration.GetSection("EmailConfiguration"))
 
-            // Настраиваем конечные точки
-            .ConfigureEndpoints(configuration.GetSection("EndpointsConfig"));
+            // Setting up endpoints
+            .ConfigureEndpoints(configuration.GetSection("EndpointsConfig"))
+        
+            // Setting up subscriptions
+            .ConfigureSubscriptionsConfig(configuration.GetSection("SubscriptionConfig"));
     }
 }

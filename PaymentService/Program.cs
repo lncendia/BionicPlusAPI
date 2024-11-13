@@ -40,8 +40,6 @@ builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IRecurrentServiceManager, RecurrentServiceManager>();
-                
-
 
 builder.Services.AddControllers();
 
@@ -66,7 +64,10 @@ app.UseCors("corsapp");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
 app.CreateHangfireDashboard(builder.Configuration);
+app.RunCancellationSubscriptionsJob();
+
 app.UseProblemDetails();
 
 app.Run();

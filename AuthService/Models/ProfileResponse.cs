@@ -39,4 +39,7 @@ public class ProfileResponse
     
     [JsonPropertyName("logins")]
     public IList<UserLoginInfo>? Logins { get; set; }
+    
+    [JsonPropertyName("subscription")]
+    public ProfileSubscription ProfileSubscription { get; set; }
 }

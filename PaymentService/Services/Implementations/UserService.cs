@@ -1,22 +1,43 @@
 ﻿using DomainObjects.Pregnancy.UserProfile;
 using DomainObjects.Subscription;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
-using PaymentService.Models;
 using PaymentService.Services.Interfaces;
-using System.Text;
-using System.Text.Json;
 using IdentityLibrary;
+using Microsoft.Extensions.Options;
+using PaymentService.Extensions;
+using PaymentService.Models;
 
 namespace PaymentService.Services.Implementations
 {
     public class UserService : IUserService
     {
         private readonly UserManager<ApplicationUser> _userManager;
-
-        public UserService(UserManager<ApplicationUser> userManager)
+        private readonly EncryptionConfig _encryptionConfig;
+        
+        public UserService(UserManager<ApplicationUser> userManager, IOptions<EncryptionConfig> encryptionConfig)
         {
             _userManager = userManager;
+            _encryptionConfig = encryptionConfig.Value;
+        }
+
+        public async Task<ApplicationUser> GetUserById(string id)
+        {
+            return await _userManager.FindByIdAsync(id);
+        }
+
+        public string GenerateUserIdHash(string userId)
+        {
+            // Generating HMAC for verification
+            return userId.ComputeHmac(_encryptionConfig.UserIdSigningKey);
+        }
+        
+        public bool VerifyUserIdHash(string userId, string hash)
+        {
+            // Generating HMAC for verification
+            var computedHash = GenerateUserIdHash(userId);
+
+            // Hash Comparison
+            return computedHash.Equals(hash);
         }
 
         public async Task<string?> GetActiveSubscription(string userId)
@@ -60,10 +81,7 @@ namespace PaymentService.Services.Implementations
                 return false;
             };
 
-            if(user.BillingProfile == null)
-            {
-                user.BillingProfile = new BillingProfile();
-            }
+            user.BillingProfile ??= new BillingProfile();
 
             user.BillingProfile.ActiveSubscriptionId = subscriptionId;
             user.BillingProfile.isFreePlan = isFreePlan;

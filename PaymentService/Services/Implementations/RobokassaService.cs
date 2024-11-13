@@ -1,13 +1,7 @@
-﻿using Amazon.Runtime.Internal.Endpoints.StandardLibrary;
-using Amazon.Runtime.Internal.Transform;
-using DomainObjects.Subscription;
-using Hangfire;
+﻿using Hangfire;
 using Microsoft.Extensions.Options;
 using PaymentService.Models.Robokassa;
 using PaymentService.Services.Interfaces;
-using SubscriptionDBMongoAccessor;
-using SubscriptionDBMongoAccessor.Infrastracture;
-using System.Globalization;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -18,7 +12,7 @@ namespace PaymentService.Services.Implementations
 {
     public class RobokassaService : IPaymentService
     {
-        private const string MERCHANT_LOGIN = "babytips";
+        private const string MerchantLogin = "babytips";
         private readonly MerchantInfo _merchantInfo;
         private readonly HttpClient _httpClient;
         private readonly ILogger<RobokassaService> _logger;
@@ -38,7 +32,7 @@ namespace PaymentService.Services.Implementations
 
         public async Task<(string link, string subscriptionId)> GetCheckoutLink(string planId, string? promocode)
         {
-            var merchantLogin = MERCHANT_LOGIN;
+            var merchantLogin = MerchantLogin;
             var plan = await _planService.GetPlan(planId);
             var outSum = plan.Price.ToString("0.00");
             var invId = await GetInvoiceId();
@@ -96,13 +90,13 @@ namespace PaymentService.Services.Implementations
 
             var shp_isFirst = false;
 
-            var signatureValue = $"{MERCHANT_LOGIN}:{outSum}:{invId}:{receiptUrlDecoded}:{pass1}:Shp_isFirst={shp_isFirst}:Shp_subscriptionId={subscriptionId}:Shp_userId={userId}";
+            var signatureValue = $"{MerchantLogin}:{outSum}:{invId}:{receiptUrlDecoded}:{pass1}:Shp_isFirst={shp_isFirst}:Shp_subscriptionId={subscriptionId}:Shp_userId={userId}";
 
             string hashedSignature = GetMD5Hash(signatureValue);
 
             var formValues = new Dictionary<string, string>
             {
-                { "MerchantLogin", MERCHANT_LOGIN },
+                { "MerchantLogin", MerchantLogin },
                 { "OutSum", outSum },
                 { "PreviousInvoiceID", previousInvoiceId },
                 { "InvId", invId.ToString() },

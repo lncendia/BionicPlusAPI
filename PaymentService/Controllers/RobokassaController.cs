@@ -1,8 +1,6 @@
 ﻿using DomainObjects.Pregnancy.UserProfile;
-using DomainObjects.Subscription;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PaymentService.Models.Robokassa;
 using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using System.Security.Claims;
@@ -13,15 +11,13 @@ namespace PaymentService.Controllers
     [ApiController]
     public class RobokassaController : Controller
     {
-        private readonly MailRecurringService _mailService;
         private readonly RobokassaService _robokassaService;
         private readonly IUserService _userService;
         private readonly PaymentProcessorService _paymentProcessorService;
         private readonly ILogger<RobokassaController> _logger;
 
-        public RobokassaController(IUserService userService, MailRecurringService mailService, RobokassaService robokassaService, PaymentProcessorService paymentProcessorService, ILogger<RobokassaController> logger)
+        public RobokassaController(IUserService userService, RobokassaService robokassaService, PaymentProcessorService paymentProcessorService, ILogger<RobokassaController> logger)
         {
-            _mailService = mailService;
             _robokassaService = robokassaService;
             _userService = userService;
             _paymentProcessorService = paymentProcessorService;

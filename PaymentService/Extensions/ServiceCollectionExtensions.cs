@@ -1,7 +1,7 @@
 ﻿using MailSenderLibrary.Models;
 using PaymentService.Models;
 using PaymentService.Models.Robokassa;
-using SubscriptionDBMongoAccessor.Infrastracture;
+using SubscriptionDBMongoAccessor.Infrastructure;
 
 namespace PaymentService.Extensions;
 
@@ -10,6 +10,12 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection ConfigureDbSettings(this IServiceCollection services, IConfigurationSection dbSettingsSection)
     {
         services.Configure<DbSettings>(dbSettingsSection);
+        return services;
+    }
+    
+    public static IServiceCollection ConfigureEncryptionSettings(this IServiceCollection services, IConfigurationSection encryptionSection)
+    {
+        services.Configure<EncryptionConfig>(encryptionSection);
         return services;
     }
 
@@ -40,6 +46,13 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection ConfigureEndpoints(this IServiceCollection services, IConfigurationSection endpointsSection)
     {
         services.Configure<EndpointsConfig>(endpointsSection);
+        return services;
+    }
+
+    public static IServiceCollection ConfigureSubscriptionsConfig(this IServiceCollection services,
+        IConfigurationSection subscriptionsSection)
+    {
+        services.Configure<SubscriptionsConfig>(subscriptionsSection);
         return services;
     }
 }

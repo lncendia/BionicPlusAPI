@@ -5,7 +5,7 @@ namespace PaymentService.Services.Interfaces
 {
     public interface ISubscriptionService
     {
-        Task<string> SetFreeSubscription(string userId, bool setupUsage, bool discardUsage = true);
+        Task<string> CreateFreeSubscription(string userId, bool setupUsage, bool discardUsage = true);
         Task<Subscription> GetSubscription(string subId);
         Task<BillingPromocode> GetPromocode(string promocode);
         Task<PriceModel> CalculatePrice(string planId, string promocode);
@@ -14,10 +14,13 @@ namespace PaymentService.Services.Interfaces
         Task<string> ActivateSubscription(string subscriptionId);
         Task<string> DeactivateSubscription(string subscriptionId);
         bool CancelAllUserRecurringJobs(string userId);
-
+        bool CancelPaymentReccuringJobs(string userId);
         Task<bool> CheckInvoiceExist(int invoiceId);
 
         [Queue("usages")]
         Task InsureSubscription(string userId, string planId);
+        
+        [Queue("expired_subscriptions")]
+        Task CancelExpiredSubscriptions();
     }
 }

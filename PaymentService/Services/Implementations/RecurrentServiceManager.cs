@@ -17,13 +17,21 @@ namespace PaymentService.Services.Implementations
 
         public bool CancelAllRecurrentJobByUserId(string userId)
         {
-            _chargeService.CancelMounthlyJob(userId);
-            _mailService.CancelMounthlyJob(userId);
-            _usageService.CancelMounthlyJob(userId);
+            CancelRecurringPaymentsJobByUserId(userId);
+            
+            _usageService.CancelMonthlyJob(userId);
+            _usageService.CancelYearlyJob(userId);
 
+            return true;
+        }
+
+        public bool CancelRecurringPaymentsJobByUserId(string userId)
+        {
+            _chargeService.CancelMonthlyJob(userId);
+            _mailService.CancelMounthlyJob(userId);
+            
             _chargeService.CancelYearlyJob(userId);
             _mailService.CancelYearlyJob(userId);
-            _usageService.CancelYearlyJob(userId);
 
             return true;
         }

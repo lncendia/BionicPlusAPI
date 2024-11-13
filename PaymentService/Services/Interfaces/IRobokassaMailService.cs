@@ -1,8 +1,10 @@
-﻿namespace PaymentService.Services.Interfaces;
+using PaymentService.Models.Emails;
+
+namespace PaymentService.Services.Interfaces;
 
 public interface IRobokassaMailService
 {
-    Task SendRecurrentPaymentEmailAsync(string mailAddress, DateTime nextSubDate, string sum, string subName);
-    Task SendSuccessPaymentEmailAsync(string mailAddress, DateTime subStartDate, DateTime subEndDate, string subName);
-    Task SendFailPaymentEmailAsync(string mailAddress);
+    Task SendRecurrentPaymentEmail(RecurrentPaymentEmailModel paymentModel);
+    Task SendSuccessPaymentEmail(SuccessPaymentEmailModel paymentEmailModel);
+    Task SendFailPaymentEmail(FailedPaymentEmailModel failedPaymentEmailModel);
 }

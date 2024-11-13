@@ -55,7 +55,8 @@ public class ProfileController : Controller
             FullName = user.FullName,
             Roles = await _userManager.GetRolesAsync(user),
             PlanId = sub.PlanId,
-            Logins = await _userManager.GetLoginsAsync(user)
+            Logins = await _userManager.GetLoginsAsync(user),
+            ProfileSubscription = new ProfileSubscription(sub)
         };
 
         return Ok(profile);
@@ -76,7 +77,8 @@ public class ProfileController : Controller
         try
         {
             var usage = await _subscriptionService.GetUsage(user.Id.ToString());
-            var subscription = await _subscriptionService.GetSubscription(user.BillingProfile?.ActiveSubscriptionId ?? "");
+            var subscription =
+                await _subscriptionService.GetSubscription(user.BillingProfile?.ActiveSubscriptionId ?? "");
 
             if (usage == null)
             {
@@ -86,7 +88,7 @@ public class ProfileController : Controller
 
             if (subscription == null)
             {
-                _logger.LogError("An error occurred while getting subscription for user: {id}",user.Id);
+                _logger.LogError("An error occurred while getting subscription for user: {id}", user.Id);
                 return NotFound("Subscription not exist");
             }
 
@@ -94,7 +96,7 @@ public class ProfileController : Controller
 
             if (plan == null)
             {
-                _logger.LogError("An error occurred while getting plan for user: {id}",user.Id);
+                _logger.LogError("An error occurred while getting plan for user: {id}", user.Id);
                 return NotFound($"Plan {subscription.PlanId} not exist");
             }
 
@@ -108,7 +110,7 @@ public class ProfileController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while getting planInfo for user: {id}",user.Id);
+            _logger.LogError(ex, "An error occurred while getting planInfo for user: {id}", user.Id);
             return NotFound("PlanInfo not found");
         }
     }
@@ -125,7 +127,7 @@ public class ProfileController : Controller
         }
 
         if (user.TemperatureUnits == temperatureUnits) return Ok();
-        
+
         user.TemperatureUnits = temperatureUnits;
         await _userManager.UpdateAsync(user);
         return Ok();
@@ -143,7 +145,7 @@ public class ProfileController : Controller
         }
 
         if (user.MeasureSystem == measureSystem) return Ok();
-        
+
         user.MeasureSystem = measureSystem;
         await _userManager.UpdateAsync(user);
         return Ok();
@@ -161,7 +163,7 @@ public class ProfileController : Controller
         }
 
         if (user.UserAgreement.WhenOccured != null) return Ok();
-        
+
         userAgreement.WhenOccured = DateTime.UtcNow;
         user.UserAgreement = userAgreement;
         await _userManager.UpdateAsync(user);
@@ -233,11 +235,11 @@ public class ProfileController : Controller
             var user = await _userManager.FindByNameAsync(username);
             await _userManager.DeleteAsync(user);
         }
-        catch(Exception)
+        catch (Exception)
         {
             return BadRequest();
         }
-            
+
         return Ok();
     }
 }
