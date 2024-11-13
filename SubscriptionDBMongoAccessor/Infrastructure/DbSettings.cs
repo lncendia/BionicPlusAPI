@@ -1,4 +1,4 @@
-﻿namespace SubscriptionDBMongoAccessor.Infrastracture
+﻿namespace SubscriptionDBMongoAccessor.Infrastructure
 {
     public class DbSettings
     {

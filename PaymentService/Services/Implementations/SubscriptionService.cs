@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 using PaymentService.Models;
 using PaymentService.Services.Interfaces;
 using SubscriptionDBMongoAccessor;
-using SubscriptionDBMongoAccessor.Infrastracture;
+using SubscriptionDBMongoAccessor.Infrastructure;
 
 namespace PaymentService.Services.Implementations;
 

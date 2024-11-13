@@ -1,8 +1,7 @@
 ﻿using MailSenderLibrary.Models;
 using PaymentService.Models;
 using PaymentService.Models.Robokassa;
-using SubscriptionDBMongoAccessor.Infrastracture;
-using SubscriptionsConfig = PaymentService.Models.SubscriptionsConfig;
+using SubscriptionDBMongoAccessor.Infrastructure;
 
 namespace PaymentService.Extensions;
 

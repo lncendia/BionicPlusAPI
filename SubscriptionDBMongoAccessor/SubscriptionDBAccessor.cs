@@ -1,7 +1,7 @@
 ﻿using DomainObjects.Infrastracture.Exceptions;
 using DomainObjects.Subscription;
 using MongoDB.Driver;
-using SubscriptionDBMongoAccessor.Infrastracture;
+using SubscriptionDBMongoAccessor.Infrastructure;
 using SubscriptionDBMongoAccessor.MongoClasses;
 
 namespace SubscriptionDBMongoAccessor

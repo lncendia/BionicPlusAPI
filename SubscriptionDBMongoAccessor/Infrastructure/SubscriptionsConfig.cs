@@ -1,4 +1,4 @@
-namespace PaymentService.Models;
+namespace SubscriptionDBMongoAccessor.Infrastructure;
 
 public class SubscriptionsConfig
 {
