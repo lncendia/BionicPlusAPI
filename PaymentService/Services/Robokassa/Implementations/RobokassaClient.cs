@@ -84,7 +84,7 @@ public class RobokassaClient : IRobokassaClient
 
         var invId = await GetInvoiceId();
 
-        var subscriptionId = await _subscriptionService.CreateSubscription(planId, invId.ToString());
+        var subscriptionId = await _subscriptionService.CreateSubscription(planId, PaymentServiceType.Robokassa, invId.ToString());
 
         var receipt = GetReceipt(plan.Price, plan.Name, 1);
 

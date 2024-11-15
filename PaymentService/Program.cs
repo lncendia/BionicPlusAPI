@@ -48,7 +48,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddHttpClient<RobokassaService>();
+builder.Services.AddHttpClient<RobokassaClient>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddProblemDetails(ProblemDetailsConfigurator.Configure);
 
