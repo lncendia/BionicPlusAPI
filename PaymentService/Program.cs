@@ -37,7 +37,7 @@ builder.Services.AddSingleton<UsageRecurringService>();
 builder.Services.AddSingleton<IEmailService, MailService>();
 builder.Services.AddSingleton<IUsageService, UsageService>();
 builder.Services.AddSingleton<IPlanService, PlanService>();
-builder.Services.AddSingleton<IRobokassaMailService, RobokassaMailService>();
+builder.Services.AddSingleton<IPaymentMailService, PaymentMailService>();
 builder.Services.AddScoped<RobokassaPaymentProcessor>();
 builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();

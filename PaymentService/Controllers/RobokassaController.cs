@@ -1,7 +1,6 @@
 ﻿using DomainObjects.Pregnancy.UserProfile;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using System.Security.Claims;
 using PaymentService.Services.Robokassa.Implementations;

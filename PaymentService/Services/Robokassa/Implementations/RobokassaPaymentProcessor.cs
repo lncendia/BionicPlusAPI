@@ -14,7 +14,7 @@ namespace PaymentService.Services.Robokassa.Implementations;
 public class RobokassaPaymentProcessor : IPaymentProcessor<RobokassaCallback>
 {
     private readonly MailRecurringService _mailService;
-    private readonly IRobokassaMailService _robokassaMailService;
+    private readonly IPaymentMailService _paymentMailService;
     private readonly ISubscriptionService _subscriptionService;
     private readonly IUserService _userService;
     private readonly ChargeRecurringService _chargeService;
@@ -26,7 +26,7 @@ public class RobokassaPaymentProcessor : IPaymentProcessor<RobokassaCallback>
     public RobokassaPaymentProcessor(
         IRobokassaClient robokassaClient,
         MailRecurringService mailRecurringService,
-        IRobokassaMailService robokassaMailService,
+        IPaymentMailService paymentMailService,
         ISubscriptionService subscriptionService,
         IUserService userService,
         ChargeRecurringService chargeRecurringService,
@@ -36,7 +36,7 @@ public class RobokassaPaymentProcessor : IPaymentProcessor<RobokassaCallback>
     {
         _robokassaClient = robokassaClient;
         _mailService = mailRecurringService;
-        _robokassaMailService = robokassaMailService;
+        _paymentMailService = paymentMailService;
         _subscriptionService = subscriptionService;
         _userService = userService;
         _chargeService = chargeRecurringService;
@@ -79,7 +79,7 @@ public class RobokassaPaymentProcessor : IPaymentProcessor<RobokassaCallback>
             SubName = plan.Name
         };
 
-        await _robokassaMailService.SendSuccessPaymentEmail(successEmail);
+        await _paymentMailService.SendSuccessPaymentEmail(successEmail);
 
         await _subscriptionService.ActivateSubscription(callback.SubscriptionId);
 

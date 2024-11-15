@@ -30,4 +30,7 @@ public class SubscriptionEvent
     /// </summary>
     [JsonPropertyName("subscriptionNotification")]
     public SubscriptionNotification SubscriptionNotification { get; init; } = new();
+    
+    [JsonIgnore]
+    public string UserId { get; init; } = string.Empty;
 }

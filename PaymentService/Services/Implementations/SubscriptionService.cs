@@ -62,9 +62,9 @@ public class SubscriptionService : ISubscriptionService
         return subscriptionId;
     }
 
-    public async Task<string> CreateSubscription(string planId, string invoiceId, string? promocode)
+    public async Task<string> CreateSubscription(string planId, PaymentServiceType serviceType, string invoiceId = "", string? promocode = null)
     {
-        string subscriptionId;
+        var subscriptionId = string.Empty;
 
         if (promocode != null)
         {
@@ -72,18 +72,18 @@ public class SubscriptionService : ISubscriptionService
             var plan = await _dbAccessor.GetPlan(planId);
             var sale = CalculateSale(promoModel, plan);
 
-            subscriptionId = await _dbAccessor.CreateSubscription(planId, invoiceId, sale, promocode);
+            subscriptionId = await _dbAccessor.CreateSubscription(planId, serviceType, invoiceId, sale, promocode);
         }
         else
         {
-            subscriptionId = await _dbAccessor.CreateSubscription(planId, invoiceId, 0, promocode);
+            subscriptionId = await _dbAccessor.CreateSubscription(planId, serviceType, invoiceId, 0, promocode);
         }
 
         return subscriptionId;
     }
 
     [Queue("usages")]
-    public async Task InsureSubscription(string userId, string planId)
+    public async Task InsureSubscription(string userId)
     {
         var subscriptionId = await _userService.GetActiveSubscription(userId);
 
@@ -121,21 +121,7 @@ public class SubscriptionService : ISubscriptionService
     {
         return await _dbAccessor.CheckInvoiceExist(invoiceId);
     }
-
-    public bool CancelAllUserRecurringJobs(string userId)
-    {
-        try
-        {
-            _recurrentServiceManager.CancelAllRecurrentJobByUserId(userId);
-        }
-        catch (Exception ex)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
+    
     public async Task<BillingPromocode> GetPromocode(string promocode)
     {
         var promoModel = await _dbAccessor.GetPromocode(promocode);

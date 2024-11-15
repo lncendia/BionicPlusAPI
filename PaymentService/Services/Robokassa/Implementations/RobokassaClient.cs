@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Web;
+using DomainObjects.Subscription;
 using Hangfire;
 using Microsoft.Extensions.Options;
 using PaymentService.Models.Robokassa;
@@ -45,7 +46,7 @@ public class RobokassaClient : IRobokassaClient
 
         var shp_userId = _httpContext.HttpContext!.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        var subscriptionId = await _subscriptionService.CreateSubscription(planId, invId.ToString(), promocode);
+        var subscriptionId = await _subscriptionService.CreateSubscription(planId, PaymentServiceType.Robokassa, invId.ToString(), promocode);
 
         var shp_isFirst = true;
 

@@ -83,7 +83,7 @@ namespace SubscriptionDBMongoAccessor
             return subscription.Id ?? throw new FormatException($"Can't get subscription id"); 
         }
 
-        public async Task<string> CreateSubscription(string planId, string invoiceId, decimal sale, string? promocode)
+        public async Task<string> CreateSubscription(string planId, PaymentServiceType type, string invoiceId, decimal sale, string? promocode)
         {
             var filter = Builders<MongoPlan>.Filter.Where(p => p.Id == planId);
             var plan = (await _plansCollection.FindAsync(filter)).FirstOrDefault();
@@ -109,7 +109,8 @@ namespace SubscriptionDBMongoAccessor
                 Currency = plan.Currency,
                 Promocode = promocode ?? null,
                 Discount = sale == 0 ? default : sale,
-                Total = plan.Price
+                Total = plan.Price,
+                PaymentServiceType = type,
             };
 
             await _subscriptionsCollection.InsertOneAsync(subscription);

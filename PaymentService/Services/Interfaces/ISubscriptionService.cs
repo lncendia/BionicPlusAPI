@@ -10,15 +10,15 @@ namespace PaymentService.Services.Interfaces
         Task<BillingPromocode> GetPromocode(string promocode);
         Task<PriceModel> CalculatePrice(string planId, string promocode);
         Task<string> SetSubscription(string userId, string planId, string subscriptionId);
-        Task<string> CreateSubscription(string planId, string invoiceId, string? promocode = null);
+        Task<string> CreateSubscription(string planId, PaymentServiceType serviceType, string invoiceId = "",
+            string? promocode = null);
         Task<string> ActivateSubscription(string subscriptionId);
         Task<string> DeactivateSubscription(string subscriptionId);
-        bool CancelAllUserRecurringJobs(string userId); //todo: не нужно
-        bool CancelPaymentReccuringJobs(string userId); //todo: выноситься в пеймент провайдер
+        bool CancelPaymentReccuringJobs(string userId); // todo: выноситься в пеймент провайдер
         Task<bool> CheckInvoiceExist(int invoiceId);
 
         [Queue("usages")]
-        Task InsureSubscription(string userId, string planId);
+        Task InsureSubscription(string userId);
         
         [Queue("expired_subscriptions")]
         Task CancelExpiredSubscriptions();

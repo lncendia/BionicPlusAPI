@@ -60,7 +60,8 @@ namespace SubscriptionDBMongoAccessor
                 Promocode = mongoSub.Promocode,
                 Currency = mongoSub.Currency,
                 Discount = mongoSub.Discount,
-                Total = mongoSub.Total
+                Total = mongoSub.Total,
+                PaymentServiceType = mongoSub.PaymentServiceType,
             };
         }
 
@@ -80,6 +81,7 @@ namespace SubscriptionDBMongoAccessor
                 Currency = sub.Currency,
                 Discount = sub.Discount,
                 Total = sub.Total,
+                PaymentServiceType = sub.PaymentServiceType,
             };
         }
 

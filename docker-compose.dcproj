@@ -14,6 +14,7 @@
     <None Include=".dockerignore" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="googleCredentials.json" />
     <Content Include="nginx\default.conf" />
   </ItemGroup>
 </Project>

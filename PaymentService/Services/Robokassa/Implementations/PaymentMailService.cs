@@ -8,12 +8,12 @@ using PaymentService.Services.Robokassa.Interfaces;
 
 namespace PaymentService.Services.Robokassa.Implementations;
 
-public class RobokassaMailService : IRobokassaMailService
+public class PaymentMailService : IPaymentMailService
 {
     private readonly IEmailService _mailService;
-    private readonly ILogger<RobokassaMailService> _logger;
+    private readonly ILogger<PaymentMailService> _logger;
 
-    public RobokassaMailService(IEmailService mailService, ILogger<RobokassaMailService> logger)
+    public PaymentMailService(IEmailService mailService, ILogger<PaymentMailService> logger)
     {
         _mailService = mailService;
         _logger = logger;

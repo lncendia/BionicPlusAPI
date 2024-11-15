@@ -41,5 +41,8 @@ namespace DomainObjects.Subscription
         [JsonPropertyName("promocode")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Promocode { get; set; }
+        
+        [JsonPropertyName("paymentServiceType")]
+        public PaymentServiceType PaymentServiceType { get; set; }
     }
 }

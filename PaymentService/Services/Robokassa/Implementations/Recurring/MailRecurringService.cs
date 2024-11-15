@@ -17,7 +17,7 @@ namespace PaymentService.Services.Robokassa.Implementations.Recurring
             var hours = utcNow.Hour;
             var minutes = utcNow.Minute;
             
-            RecurringJob.AddOrUpdate<IRobokassaMailService>($"{MonthlyPrefix}_{emailModel.UserId}", x => x.SendRecurrentPaymentEmail(emailModel), Cron.Monthly(day, hours, minutes));
+            RecurringJob.AddOrUpdate<IPaymentMailService>($"{MonthlyPrefix}_{emailModel.UserId}", x => x.SendRecurrentPaymentEmail(emailModel), Cron.Monthly(day, hours, minutes));
         }
 
         public void CancelMounthlyJob(string jobId)
