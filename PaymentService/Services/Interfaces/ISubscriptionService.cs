@@ -13,8 +13,8 @@ namespace PaymentService.Services.Interfaces
         Task<string> CreateSubscription(string planId, string invoiceId, string? promocode = null);
         Task<string> ActivateSubscription(string subscriptionId);
         Task<string> DeactivateSubscription(string subscriptionId);
-        bool CancelAllUserRecurringJobs(string userId);
-        bool CancelPaymentReccuringJobs(string userId);
+        bool CancelAllUserRecurringJobs(string userId); //todo: не нужно
+        bool CancelPaymentReccuringJobs(string userId); //todo: выноситься в пеймент провайдер
         Task<bool> CheckInvoiceExist(int invoiceId);
 
         [Queue("usages")]

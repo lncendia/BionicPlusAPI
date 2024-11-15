@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using System.Security.Claims;
+using PaymentService.Services.Robokassa.Implementations;
 
 namespace PaymentService.Controllers
 {
@@ -13,10 +14,10 @@ namespace PaymentService.Controllers
     {
         private readonly RobokassaService _robokassaService;
         private readonly IUserService _userService;
-        private readonly PaymentProcessorService _paymentProcessorService;
+        private readonly RobokassaPaymentProcessor _paymentProcessorService;
         private readonly ILogger<RobokassaController> _logger;
 
-        public RobokassaController(IUserService userService, RobokassaService robokassaService, PaymentProcessorService paymentProcessorService, ILogger<RobokassaController> logger)
+        public RobokassaController(IUserService userService, RobokassaService robokassaService, RobokassaPaymentProcessor paymentProcessorService, ILogger<RobokassaController> logger)
         {
             _robokassaService = robokassaService;
             _userService = userService;
@@ -58,7 +59,7 @@ namespace PaymentService.Controllers
         {
             try
             {
-                var sign = _robokassaService.VerifySignature(SignatureValue, OutSum, InvId, Shp_userId, Shp_isFirst, Shp_subscriptionId);
+                var sign = _robokassaService.VerifySignature(SignatureValue, OutSum, InvId, Shp_userId, Shp_isFirst, Shp_subscriptionId); //todo: выноситься в payment procesor
 
                 if (!sign)
                 {

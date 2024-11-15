@@ -1,4 +1,5 @@
 ﻿using PaymentService.Services.Interfaces;
+using PaymentService.Services.Robokassa.Implementations.Recurring;
 
 namespace PaymentService.Services.Implementations
 {

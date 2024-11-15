@@ -21,6 +21,7 @@
     <PackageReference Include="NLog.Extensions.Logging" Version="5.3.5" />
     <PackageReference Include="NLog.Web.AspNetCore" Version="5.3.5" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="Google.Apis.AndroidPublisher.v3" Version="1.68.0.3576" />
   </ItemGroup>
 
   <ItemGroup>

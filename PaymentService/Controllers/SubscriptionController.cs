@@ -107,6 +107,6 @@ public class SubscriptionController : Controller
         var subscriptionId = await _userService.GetActiveSubscription(userId);
         if (subscriptionId == null) return;
         await _subscriptionService.DeactivateSubscription(subscriptionId);
-        _subscriptionService.CancelPaymentReccuringJobs(userId);
+        _subscriptionService.CancelPaymentReccuringJobs(userId); //todo: выноситься в пеймент процессор
     }
 }

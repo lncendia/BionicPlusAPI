@@ -1,7 +1,8 @@
 ﻿using Hangfire;
 using PaymentService.Models.Emails;
+using PaymentService.Services.Robokassa.Interfaces;
 
-namespace PaymentService.Services.Implementations
+namespace PaymentService.Services.Robokassa.Implementations.Recurring
 {
     public class MailRecurringService 
     {
@@ -16,7 +17,7 @@ namespace PaymentService.Services.Implementations
             var hours = utcNow.Hour;
             var minutes = utcNow.Minute;
             
-            RecurringJob.AddOrUpdate<RobokassaMailService>($"{MonthlyPrefix}_{emailModel.UserId}", x => x.SendRecurrentPaymentEmail(emailModel), Cron.Monthly(day, hours, minutes));
+            RecurringJob.AddOrUpdate<IRobokassaMailService>($"{MonthlyPrefix}_{emailModel.UserId}", x => x.SendRecurrentPaymentEmail(emailModel), Cron.Monthly(day, hours, minutes));
         }
 
         public void CancelMounthlyJob(string jobId)

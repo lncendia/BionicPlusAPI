@@ -64,7 +64,7 @@ public class SubscriptionService : ISubscriptionService
 
     public async Task<string> CreateSubscription(string planId, string invoiceId, string? promocode)
     {
-        var subscriptionId = string.Empty;
+        string subscriptionId;
 
         if (promocode != null)
         {

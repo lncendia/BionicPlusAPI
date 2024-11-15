@@ -4,9 +4,9 @@ using MailSenderLibrary.Interfaces;
 using MailSenderLibrary.Models;
 using PaymentService.Constants;
 using PaymentService.Models.Emails;
-using PaymentService.Services.Interfaces;
+using PaymentService.Services.Robokassa.Interfaces;
 
-namespace PaymentService.Services.Implementations;
+namespace PaymentService.Services.Robokassa.Implementations;
 
 public class RobokassaMailService : IRobokassaMailService
 {
