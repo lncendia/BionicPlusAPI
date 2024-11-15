@@ -11,14 +11,14 @@ namespace PaymentService.Controllers
     [ApiController]
     public class RobokassaController : Controller
     {
-        private readonly RobokassaService _robokassaService;
+        private readonly RobokassaClient _robokassaClient;
         private readonly IUserService _userService;
         private readonly RobokassaPaymentProcessor _paymentProcessorService;
         private readonly ILogger<RobokassaController> _logger;
 
-        public RobokassaController(IUserService userService, RobokassaService robokassaService, RobokassaPaymentProcessor paymentProcessorService, ILogger<RobokassaController> logger)
+        public RobokassaController(IUserService userService, RobokassaClient robokassaClient, RobokassaPaymentProcessor paymentProcessorService, ILogger<RobokassaController> logger)
         {
-            _robokassaService = robokassaService;
+            _robokassaClient = robokassaClient;
             _userService = userService;
             _paymentProcessorService = paymentProcessorService;
             _logger = logger;
@@ -36,7 +36,7 @@ namespace PaymentService.Controllers
             var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var saveAgreementsTask = _userService.SaveUserAgreements(userAgreement, userId);
-            var linkTask = _robokassaService.GetCheckoutLink(planId, promocode);
+            var linkTask = _robokassaClient.GetCheckoutLink(planId, promocode);
 
             await Task.WhenAll(saveAgreementsTask, linkTask);
 
@@ -58,7 +58,7 @@ namespace PaymentService.Controllers
         {
             try
             {
-                var sign = _robokassaService.VerifySignature(SignatureValue, OutSum, InvId, Shp_userId, Shp_isFirst, Shp_subscriptionId); //todo: выноситься в payment procesor
+                var sign = _robokassaClient.VerifySignature(SignatureValue, OutSum, InvId, Shp_userId, Shp_isFirst, Shp_subscriptionId); //todo: выноситься в payment procesor
 
                 if (!sign)
                 {
