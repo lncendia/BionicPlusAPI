@@ -22,7 +22,7 @@ public static class ApplicationOptions
 
             // Settings up jwt configuration
             .ConfigureEncryptionSettings(configuration.GetSection("EncryptionConfig"))
-            
+
             // settings up merchant info
             .ConfigureMerchantInfoSettings(configuration.GetSection("MerchantInfo"))
 
@@ -34,8 +34,11 @@ public static class ApplicationOptions
 
             // Setting up endpoints
             .ConfigureEndpoints(configuration.GetSection("EndpointsConfig"))
-        
+
             // Setting up subscriptions
-            .ConfigureSubscriptionsConfig(configuration.GetSection("SubscriptionConfig"));
+            .ConfigureSubscriptionsConfig(configuration.GetSection("SubscriptionConfig"))
+
+            // Settings up google play config
+            .ConfigureGooglePlayConfig(configuration.GetSection("GooglePlayConfig"));
     }
 }

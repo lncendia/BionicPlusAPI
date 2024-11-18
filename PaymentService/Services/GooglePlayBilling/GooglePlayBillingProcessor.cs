@@ -25,10 +25,10 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<SubscriptionEvent>, 
     private readonly IPlanService _planService;
     private readonly string _appName;
 
-    public GooglePlayBillingProcessor(ISubscriptionService subscriptionService, IUserService userService, IOptions<EndpointsConfig> endpointsOptions, IPlanService planService, IPaymentMailService paymentMailService, MailRecurringService mailService)
+    public GooglePlayBillingProcessor(ISubscriptionService subscriptionService, IUserService userService, IOptions<EndpointsConfig> endpointsOptions,
+        IPlanService planService, IPaymentMailService paymentMailService, MailRecurringService mailService, IOptions<GooglePlayConfig> googlePlayOptions)
     {
-        // todo: from configuration
-        var appName = "test";
+        var appName = googlePlayOptions.Value.AppName;
         var credential = GoogleCredential.FromFile("/app/googleCredentials.json");
         
         _appName = appName;

@@ -55,4 +55,11 @@ public static class ServiceCollectionExtensions
         services.Configure<SubscriptionsConfig>(subscriptionsSection);
         return services;
     }
+
+    public static IServiceCollection ConfigureGooglePlayConfig(this IServiceCollection services,
+        IConfigurationSection googlePlaySection)
+    {
+        services.Configure<GooglePlayConfig>(googlePlaySection);
+        return services;
+    }
 }

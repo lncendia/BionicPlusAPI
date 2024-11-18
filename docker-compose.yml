@@ -91,8 +91,6 @@ services:
     build:
       context: .
       dockerfile: PaymentService/Dockerfile
-    volumes:
-      - ./googleCredentials.json:/app/googleCredentials.json
     container_name: paymentservice
     ports:
       - "8083:8083"
@@ -118,3 +116,4 @@ services:
       - MERCHANTINFO__PASSWORD2=${INPUT_MERCHANT_PASS2}
       - SUBSCRIPTIONCONFIG__EXPIREDTIMEINMINUTES=${INPUT_SUB_EXPIRATION_TIME_MINUTES}
       - ENCRYPTIONCONFIG__USERIDSIGNINGKEY=${INPUT_JWT_ISSUER_SIGNING_KEY}
+      - GOOGLEPLAYCONFIG__APPNAME=${GOOGLE_APP_NAME}

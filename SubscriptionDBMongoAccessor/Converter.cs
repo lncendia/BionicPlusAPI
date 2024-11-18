@@ -102,7 +102,8 @@ namespace SubscriptionDBMongoAccessor
                 Limits = mongoPlan.Limits,
                 Name = mongoPlan.Name,
                 Price = mongoPlan.Price,
-                ResellerId = mongoPlan.ResellerId
+                ResellerId = mongoPlan.ResellerId,
+                GoogleSubscriptionId = mongoPlan.GoogleSubscriptionId,
             };
         }
 
@@ -119,7 +120,8 @@ namespace SubscriptionDBMongoAccessor
                 Limits = plan.Limits,
                 Name = plan.Name,
                 Price = plan.Price,
-                ResellerId = plan.ResellerId
+                ResellerId = plan.ResellerId,
+                GoogleSubscriptionId = plan.GoogleSubscriptionId,
             };
         }
     }
