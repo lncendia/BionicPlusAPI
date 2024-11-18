@@ -83,6 +83,31 @@ namespace SubscriptionDBMongoAccessor
             return subscription.Id ?? throw new FormatException($"Can't get subscription id"); 
         }
 
+        public async Task<string> SetGooglePurchaseToken(string subscriptionId, string orderId, string purchaseToken)
+        {
+            var filter = Builders<MongoSubscription>.Filter.Where(p => p.Id == subscriptionId);
+
+            var updatedSubscription = Builders<MongoSubscription>.Update
+                .Combine(Builders<MongoSubscription>.Update.Set(s => s.GooglePurchaseToken, purchaseToken),
+                    Builders<MongoSubscription>.Update.Set(s => s.GoogleOrderId, orderId));
+
+            var updateResult = await _subscriptionsCollection.FindOneAndUpdateAsync(filter, updatedSubscription);
+
+            return updateResult.Id ?? throw new ArgumentException($"Not found subscription with id = {subscriptionId}");
+        }
+
+        public async Task<Subscription> GetSubscriptionByOrderId(string orderId)
+        {
+            var filter = Builders<MongoSubscription>.Filter.Where(u => u.GoogleOrderId == orderId);
+            var subscription = (await _subscriptionsCollection.FindAsync(filter)).FirstOrDefault();
+            if (subscription != null)
+            {
+                return subscription.Convert();
+            }
+
+            throw new ArgumentException($"Subscription with googleOrderId {orderId} not exists");
+        }
+        
         public async Task<string> CreateSubscription(string planId, PaymentServiceType type, string invoiceId, decimal sale, string? promocode)
         {
             var filter = Builders<MongoPlan>.Filter.Where(p => p.Id == planId);

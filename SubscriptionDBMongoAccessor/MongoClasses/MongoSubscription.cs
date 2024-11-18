@@ -46,6 +46,12 @@ namespace SubscriptionDBMongoAccessor.MongoClasses
         [BsonIgnoreIfDefault]
         public string? Promocode { get; set; }
         
+        [BsonElement("googleOrderId")]
+        public string? GoogleOrderId { get; set; }
+        
+        [BsonElement("googlePurchaseToken")]
+        public string? GooglePurchaseToken { get; set; } 
+        
         [BsonElement("paymentServiceType")]
         public PaymentServiceType PaymentServiceType { get; set; }
     }

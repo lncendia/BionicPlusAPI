@@ -4,6 +4,7 @@ using Google.Apis.AndroidPublisher.v3;
 using Google.Apis.AndroidPublisher.v3.Data;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
+using Microsoft.Extensions.Options;
 using PaymentService.Models;
 using PaymentService.Models.Emails;
 using PaymentService.Models.GooglePlayBilling;
@@ -24,17 +25,19 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<SubscriptionEvent>, 
     private readonly IPlanService _planService;
     private readonly string _appName;
 
-    public GooglePlayBillingProcessor(string appName, ISubscriptionService subscriptionService, IUserService userService, EndpointsConfig endpointsConfig, IPlanService planService, IPaymentMailService paymentMailService, MailRecurringService mailService)
+    public GooglePlayBillingProcessor(ISubscriptionService subscriptionService, IUserService userService, IOptions<EndpointsConfig> endpointsOptions, IPlanService planService, IPaymentMailService paymentMailService, MailRecurringService mailService)
     {
+        // todo: from configuration
+        var appName = "test";
+        var credential = GoogleCredential.FromFile("/app/googleCredentials.json");
+        
         _appName = appName;
         _subscriptionService = subscriptionService;
         _userService = userService;
-        _endpointsConfig = endpointsConfig;
+        _endpointsConfig = endpointsOptions.Value;
         _planService = planService;
         _paymentMailService = paymentMailService;
         _mailService = mailService;
-
-        var credential = GoogleCredential.FromFile("/app/googleCredentials.json");
 
         credential = credential.CreateScoped(AndroidPublisherService.ScopeConstants.Androidpublisher);
 
@@ -204,9 +207,9 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<SubscriptionEvent>, 
 
     public async Task CancelAsync(string userId)
     {
-        var x = await _androidPublisherService.Purchases.Subscriptions
-            .Cancel()
-            .ExecuteAsync();
+        // var x = await _androidPublisherService.Purchases.Subscriptions
+        //     .Cancel()
+        //     .ExecuteAsync();
     }
 
     public void Dispose()

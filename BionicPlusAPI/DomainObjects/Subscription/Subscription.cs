@@ -42,6 +42,12 @@ namespace DomainObjects.Subscription
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Promocode { get; set; }
         
+        [JsonPropertyName("googleOrderId")]
+        public string? GoogleOrderId { get; set; }
+        
+        [JsonPropertyName("googlePurchaseToken")]
+        public string? GooglePurchaseToken { get; set; } 
+        
         [JsonPropertyName("paymentServiceType")]
         public PaymentServiceType PaymentServiceType { get; set; }
     }

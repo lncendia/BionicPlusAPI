@@ -82,6 +82,16 @@ public class SubscriptionService : ISubscriptionService
         return subscriptionId;
     }
 
+    public async Task SetGooglePurchaseToken(string subscriptionId, string orderId, string purchaseToken)
+    {
+        await _dbAccessor.SetGooglePurchaseToken(subscriptionId, orderId, purchaseToken);
+    }
+
+    public async Task<Subscription> GetSubscriptionByGoogleOrderId(string googleOrderId)
+    {
+        return await _dbAccessor.GetSubscriptionByOrderId(googleOrderId);
+    }
+
     [Queue("usages")]
     public async Task InsureSubscription(string userId)
     {

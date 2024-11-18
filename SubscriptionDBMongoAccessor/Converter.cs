@@ -62,6 +62,8 @@ namespace SubscriptionDBMongoAccessor
                 Discount = mongoSub.Discount,
                 Total = mongoSub.Total,
                 PaymentServiceType = mongoSub.PaymentServiceType,
+                GooglePurchaseToken = mongoSub.GooglePurchaseToken,
+                GoogleOrderId = mongoSub.GoogleOrderId,
             };
         }
 
@@ -82,6 +84,8 @@ namespace SubscriptionDBMongoAccessor
                 Discount = sub.Discount,
                 Total = sub.Total,
                 PaymentServiceType = sub.PaymentServiceType,
+                GooglePurchaseToken = sub.GooglePurchaseToken,
+                GoogleOrderId = sub.GoogleOrderId,
             };
         }
 

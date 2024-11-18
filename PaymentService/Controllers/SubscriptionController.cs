@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using PaymentService.Services.Interfaces;
 using System.Security.Claims;
 using DomainObjects.Pregnancy.Localizations;
+using DomainObjects.Subscription;
 using PaymentService.Constants;
 
 namespace PaymentService.Controllers;
@@ -95,6 +96,27 @@ public class SubscriptionController : Controller
         };
 
         return Ok(result);
+    }
+
+    [HttpPost("googleSubscription", Name = "SetGooglePurchaseToken")]
+    public async Task<IActionResult> CancelSubscription([FromQuery, Required] string subscriptionId,
+        [FromQuery, Required] string googleOrderId,
+        [FromQuery, Required] string googlePurchaseToken)
+    {
+        if (string.IsNullOrWhiteSpace(googleOrderId) || string.IsNullOrWhiteSpace(googlePurchaseToken))
+        {
+            return BadRequest("Invalid google order id or google purchase token.");
+        }
+        
+        await _subscriptionService.SetGooglePurchaseToken(subscriptionId, googleOrderId, googlePurchaseToken);
+
+        return Ok();
+    }
+
+    [HttpGet("googleSubscription", Name = "GetByOrderId")]
+    public async Task<ActionResult<Subscription>> GetSubscriptionByOrderId([FromQuery, Required] string orderId)
+    {
+        return await _subscriptionService.GetSubscriptionByGoogleOrderId(orderId);
     }
 
     /// <summary>
