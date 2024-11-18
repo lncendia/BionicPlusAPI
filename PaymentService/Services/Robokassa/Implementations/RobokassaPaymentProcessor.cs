@@ -135,14 +135,16 @@ public class RobokassaPaymentProcessor : IPaymentProcessor<RobokassaCallback>
         }
     }
 
-    public Task CancelAsync(string userId)
+    public async Task CancelAsync(string userId)
     {
+        var subscription = await _userService.GetActiveSubscription(userId);
+        
         _chargeService.CancelMonthlyJob(userId);
         _mailService.CancelMounthlyJob(userId);
 
         _chargeService.CancelYearlyJob(userId);
         _mailService.CancelYearlyJob(userId);
-
-        return Task.CompletedTask;
+        
+        await _subscriptionService.DeactivateSubscription(subscription);
     }
 }
