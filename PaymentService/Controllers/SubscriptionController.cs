@@ -6,6 +6,8 @@ using System.Security.Claims;
 using DomainObjects.Pregnancy.Localizations;
 using DomainObjects.Subscription;
 using PaymentService.Constants;
+using PaymentService.Models.GooglePlayBilling;
+using PaymentService.Models.Robokassa;
 
 namespace PaymentService.Controllers;
 
@@ -16,11 +18,15 @@ public class SubscriptionController : Controller
 {
     private readonly ISubscriptionService _subscriptionService;
     private readonly IUserService _userService;
+    private readonly IPaymentProcessor<RobokassaCallback> _robokassaPaymentProcessor;
+    private readonly IPaymentProcessor<GoogleCallback> _googlePlayBillingProcessor;
 
-    public SubscriptionController(ISubscriptionService subscriptionService, IUserService userService)
+    public SubscriptionController(ISubscriptionService subscriptionService, IUserService userService, IPaymentProcessor<RobokassaCallback> paymentProcessorService, IPaymentProcessor<GoogleCallback> googlePlayBillingProcessor)
     {
         _subscriptionService = subscriptionService;
         _userService = userService;
+        _robokassaPaymentProcessor = paymentProcessorService;
+        _googlePlayBillingProcessor = googlePlayBillingProcessor;
     }
 
     [HttpPost(Name = "CreateFreeSubscription")]
@@ -98,27 +104,6 @@ public class SubscriptionController : Controller
         return Ok(result);
     }
 
-    [HttpPost("googleSubscription", Name = "SetGooglePurchaseToken")]
-    public async Task<IActionResult> CancelSubscription([FromQuery, Required] string subscriptionId,
-        [FromQuery, Required] string googleOrderId,
-        [FromQuery, Required] string googlePurchaseToken)
-    {
-        if (string.IsNullOrWhiteSpace(googleOrderId) || string.IsNullOrWhiteSpace(googlePurchaseToken))
-        {
-            return BadRequest("Invalid google order id or google purchase token.");
-        }
-        
-        await _subscriptionService.SetGooglePurchaseToken(subscriptionId, googleOrderId, googlePurchaseToken);
-
-        return Ok();
-    }
-
-    [HttpGet("googleSubscription", Name = "GetByOrderId")]
-    public async Task<ActionResult<Subscription>> GetSubscriptionByOrderId([FromQuery, Required] string orderId)
-    {
-        return await _subscriptionService.GetSubscriptionByGoogleOrderId(orderId);
-    }
-
     /// <summary>
     /// Method for cancellation user subscription
     /// </summary>
@@ -128,7 +113,14 @@ public class SubscriptionController : Controller
     {
         var subscriptionId = await _userService.GetActiveSubscription(userId);
         if (subscriptionId == null) return;
-        await _subscriptionService.DeactivateSubscription(subscriptionId);
-        _subscriptionService.CancelPaymentReccuringJobs(userId); //todo: выноситься в пеймент процессор
+        var subscription = await _subscriptionService.GetSubscription(subscriptionId);
+        var task = subscription.PaymentServiceType switch
+        {
+            PaymentServiceType.Robokassa => _robokassaPaymentProcessor.CancelAsync(userId),
+            PaymentServiceType.GooglePlay => _googlePlayBillingProcessor.CancelAsync(userId),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+        
+        await task;
     }
 }

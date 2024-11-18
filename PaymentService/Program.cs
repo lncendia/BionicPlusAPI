@@ -42,12 +42,11 @@ builder.Services.AddSingleton<IUsageService, UsageService>();
 builder.Services.AddSingleton<IPlanService, PlanService>();
 builder.Services.AddSingleton<IPaymentMailService, PaymentMailService>();
 builder.Services.AddScoped<IPaymentProcessor<RobokassaCallback>, RobokassaPaymentProcessor>();
-builder.Services.AddScoped<IPaymentProcessor<SubscriptionEvent>, GooglePlayBillingProcessor>();
+builder.Services.AddScoped<IPaymentProcessor<GoogleCallback>, GooglePlayBillingProcessor>();
 builder.Services.AddScoped<IRobokassaClient, RobokassaClient>();
 builder.Services.AddTransient<CurrentRequestBearerTokenProvider>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddSingleton<IRecurrentServiceManager, RecurrentServiceManager>();
 
 builder.Services.AddControllers();
 

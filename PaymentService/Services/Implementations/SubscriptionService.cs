@@ -11,20 +11,20 @@ namespace PaymentService.Services.Implementations;
 public class SubscriptionService : ISubscriptionService
 {
     private readonly SubscriptionDBAccessor _dbAccessor;
+    private readonly UsageRecurringService _usageRecurringService;
     private readonly PlansConfiguration _plans;
     private readonly IUserService _userService;
-    private readonly IRecurrentServiceManager _recurrentServiceManager;
     private readonly ILogger<SubscriptionService> _logger;
 
     public SubscriptionService(IOptions<DbSettings> dbSettings, IOptions<SubscriptionsConfig> subscriptionsConfig,
-        IOptions<PlansConfiguration> plans, IUserService userService,
-        IRecurrentServiceManager recurrentServiceManager, ILogger<SubscriptionService> logger)
+        IOptions<PlansConfiguration> plans, IUserService userService, ILogger<SubscriptionService> logger,
+        UsageRecurringService usageRecurringService)
     {
         _dbAccessor = new SubscriptionDBAccessor(dbSettings.Value, subscriptionsConfig.Value);
         _plans = plans.Value;
         _userService = userService;
-        _recurrentServiceManager = recurrentServiceManager;
         _logger = logger;
+        _usageRecurringService = usageRecurringService;
     }
 
     public Task<Subscription> GetSubscription(string subId)
@@ -36,8 +36,6 @@ public class SubscriptionService : ISubscriptionService
     public async Task<string> CreateFreeSubscription(string userId, bool setupUsage, bool discardUsage = true)
     {
         var freePlanId = _plans.FreePlanId;
-
-        _recurrentServiceManager.CancelAllRecurrentJobByUserId(userId);
 
         if (setupUsage && discardUsage)
         {
@@ -62,7 +60,8 @@ public class SubscriptionService : ISubscriptionService
         return subscriptionId;
     }
 
-    public async Task<string> CreateSubscription(string planId, PaymentServiceType serviceType, string invoiceId = "", string? promocode = null)
+    public async Task<string> CreateSubscription(string planId, PaymentServiceType serviceType, string invoiceId = "",
+        string? promocode = null)
     {
         var subscriptionId = string.Empty;
 
@@ -97,15 +96,13 @@ public class SubscriptionService : ISubscriptionService
     {
         var subscriptionId = await _userService.GetActiveSubscription(userId);
 
-        if (subscriptionId == null)
-        {
-            return;
-        }
+        if (subscriptionId == null) return;
 
         var subscription = await GetSubscription(subscriptionId);
         if (subscription.Status != SubscriptionStatus.Active)
         {
-            _recurrentServiceManager.CancelAllRecurrentJobByUserId(userId);
+            _usageRecurringService.CancelMonthlyJob(userId);
+            _usageRecurringService.CancelYearlyJob(userId);
             var freeSubscriptionId = await CreateFreeSubscription(userId, false);
             await _userService.SetSubscription(userId, freeSubscriptionId, true);
         }
@@ -116,22 +113,16 @@ public class SubscriptionService : ISubscriptionService
         return await _dbAccessor.SetSubscriptionStatus(subscriptionId, SubscriptionStatus.Active);
     }
 
-    public async Task<string> DeactivateSubscription(string subscriptionId) 
+    public async Task<string> DeactivateSubscription(string subscriptionId)
     {
         return await _dbAccessor.SetSubscriptionStatus(subscriptionId, SubscriptionStatus.Inactive);
-    }
-
-    public bool CancelPaymentReccuringJobs(string userId)
-    {
-        _recurrentServiceManager.CancelRecurringPaymentsJobByUserId(userId);
-        return true;
     }
 
     public async Task<bool> CheckInvoiceExist(int invoiceId)
     {
         return await _dbAccessor.CheckInvoiceExist(invoiceId);
     }
-    
+
     public async Task<BillingPromocode> GetPromocode(string promocode)
     {
         var promoModel = await _dbAccessor.GetPromocode(promocode);

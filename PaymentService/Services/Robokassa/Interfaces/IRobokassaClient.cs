@@ -2,7 +2,7 @@
 
 public interface IRobokassaClient
 {
-    Task<(string link, string subscriptionId)> GetCheckoutLink(string planId, string promocode);
+    Task<(string link, string subscriptionId)> GetCheckoutLink(string planId, string? promocode);
 
     Task<bool> ChargeRecurrentPayment(string previousInvoiceId, string planId, string userId);
 

@@ -8,6 +8,7 @@ using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using PaymentService.Services.Robokassa.Implementations.Recurring;
 using PaymentService.Services.Robokassa.Interfaces;
+using CheckoutModel = PaymentService.Models.CheckoutModel;
 
 namespace PaymentService.Services.Robokassa.Implementations;
 
@@ -45,6 +46,16 @@ public class RobokassaPaymentProcessor : IPaymentProcessor<RobokassaCallback>
         _endpointsConfig = endpointsConfig.Value;
     }
 
+    public async Task<CheckoutModel> CheckoutAsync(string planId, string? promocode)
+    {
+        var link = await _robokassaClient.GetCheckoutLink(planId, promocode);
+        return new CheckoutModel
+        {
+            Link = link.link,
+            SubscriptionId = link.subscriptionId
+        };
+    }
+
     public Task VerifyAsync(RobokassaCallback callback)
     {
         var result = _robokassaClient.VerifySignature(
@@ -55,7 +66,9 @@ public class RobokassaPaymentProcessor : IPaymentProcessor<RobokassaCallback>
             callback.IsFirst,
             callback.SubscriptionId);
 
-        return Task.FromResult(result);
+        if (!result) throw new ApplicationException("Signature verification failed");
+
+        return Task.CompletedTask;
     }
 
     public async Task ProcessAsync(RobokassaCallback callback)
@@ -68,12 +81,15 @@ public class RobokassaPaymentProcessor : IPaymentProcessor<RobokassaCallback>
 
         var plan = await _planService.GetPlan(planId);
 
+        // Get the user details
+        var user = await _userService.GetUserById(callback.UserId);
+        
         var successEmail = new SuccessPaymentEmailModel
         {
             CancelSubscriptionBaseUrl = _endpointsConfig.CancelSubscriptionBaseUrl,
             UserId = callback.UserId,
             Hash = _userService.GenerateUserIdHash(callback.UserId),
-            Email = callback.Email,
+            Email = user.Email,
             SubStartDate = subscription.CreationDate,
             SubEndDate = subscription.ExpirationDate,
             SubName = plan.Name
@@ -92,7 +108,7 @@ public class RobokassaPaymentProcessor : IPaymentProcessor<RobokassaCallback>
             CancelSubscriptionBaseUrl = _endpointsConfig.CancelSubscriptionBaseUrl,
             UserId = callback.UserId,
             Hash = _userService.GenerateUserIdHash(callback.UserId),
-            Email = callback.Email,
+            Email = user.Email,
             NextSubDate = subscription.ExpirationDate,
             Sum = plan.Price.ToString(CultureInfo.InvariantCulture),
             SubName = plan.Name,

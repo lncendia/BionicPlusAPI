@@ -1,7 +1,7 @@
 ﻿using Hangfire;
 using PaymentService.Services.Robokassa.Interfaces;
 
-namespace PaymentService.Services.Robokassa.Implementations.Recurring;
+namespace PaymentService.Services.Robokassa.Implementations;
 
 public class ChargeRecurringService
 {

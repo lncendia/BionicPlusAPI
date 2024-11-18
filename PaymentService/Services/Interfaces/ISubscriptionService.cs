@@ -14,7 +14,6 @@ namespace PaymentService.Services.Interfaces
             string? promocode = null);
         Task<string> ActivateSubscription(string subscriptionId);
         Task<string> DeactivateSubscription(string subscriptionId);
-        bool CancelPaymentReccuringJobs(string userId); // todo: выноситься в пеймент провайдер
         Task<bool> CheckInvoiceExist(int invoiceId);
         Task SetGooglePurchaseToken(string subscriptionId, string orderId, string purchaseToken);
         Task<Subscription> GetSubscriptionByGoogleOrderId(string googleOrderId);

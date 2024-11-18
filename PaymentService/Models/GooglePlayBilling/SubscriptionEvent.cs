@@ -5,7 +5,7 @@ namespace PaymentService.Models.GooglePlayBilling;
 /// <summary>
 /// Класс, представляющий основное сообщение.
 /// </summary>
-public class SubscriptionEvent
+public class GoogleCallback
 {
     /// <summary>
     /// Версия сообщения.
@@ -30,7 +30,4 @@ public class SubscriptionEvent
     /// </summary>
     [JsonPropertyName("subscriptionNotification")]
     public SubscriptionNotification SubscriptionNotification { get; init; } = new();
-    
-    [JsonIgnore]
-    public string UserId { get; init; } = string.Empty;
 }
