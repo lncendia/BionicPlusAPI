@@ -91,6 +91,8 @@ services:
     build:
       context: .
       dockerfile: PaymentService/Dockerfile
+    volumes:
+      - ./googleCredentials.json:/app/googleCredentials.json
     container_name: paymentservice
     ports:
       - "8083:8083"
