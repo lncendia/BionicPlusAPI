@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaymentService.Services.Interfaces;
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
 using DomainObjects.Subscription;
 using PaymentService.Models.GooglePlayBilling;
 using PaymentService.Models.Robokassa;
@@ -110,6 +112,19 @@ public class RobokassaController : Controller
     [HttpPost("google", Name = "Handle google event")]
     public async Task<ActionResult<string>> Handle(GoogleWebhook webhook)
     {
-        return Ok();
+        var base64Bytes = Convert.FromBase64String(webhook.Message.Data);
+        var data = Encoding.UTF8.GetString(base64Bytes);
+        var callback = JsonSerializer.Deserialize<GoogleCallback>(data);
+        if (callback?.SubscriptionNotification == null) return Ok();
+        try
+        {
+            await _googlePlayBillingProcessor.ProcessAsync(callback);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"error occured on success ==================> {ex.Message}");
+            throw;
+        }
     }
 }

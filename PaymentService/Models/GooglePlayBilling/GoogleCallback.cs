@@ -29,5 +29,5 @@ public class GoogleCallback
     /// Уведомление о подписке.
     /// </summary>
     [JsonPropertyName("subscriptionNotification")]
-    public SubscriptionNotification SubscriptionNotification { get; init; } = new();
+    public SubscriptionNotification? SubscriptionNotification { get; init; }
 }
