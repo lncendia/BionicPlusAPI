@@ -139,12 +139,15 @@ public class RobokassaPaymentProcessor : IPaymentProcessor<RobokassaCallback>
     {
         var subscription = await _userService.GetActiveSubscription(userId);
         
+        // If there is no active subscription, return
+        if (subscription == null) return;
+        
+        await _subscriptionService.DeactivateSubscription(subscription);
+        
         _chargeService.CancelMonthlyJob(userId);
         _mailService.CancelMounthlyJob(userId);
 
         _chargeService.CancelYearlyJob(userId);
         _mailService.CancelYearlyJob(userId);
-        
-        await _subscriptionService.DeactivateSubscription(subscription);
     }
 }

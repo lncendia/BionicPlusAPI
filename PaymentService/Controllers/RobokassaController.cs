@@ -8,8 +8,6 @@ using System.Text.Json;
 using DomainObjects.Subscription;
 using PaymentService.Models.GooglePlayBilling;
 using PaymentService.Models.Robokassa;
-using PaymentService.Services.GooglePlayBilling;
-using PaymentService.Services.Robokassa.Implementations;
 
 namespace PaymentService.Controllers;
 
