@@ -4,19 +4,19 @@ using System.Text.Json.Serialization;
 namespace PaymentService.Models.GooglePlayBilling;
 
 /// <summary>
-/// Класс, представляющий вебхук от гугл.
+/// Class representing a webhook from Google.
 /// </summary>
 public class GoogleWebhook
 {
     /// <summary>
-    /// Сообщение.
+    /// Message.
     /// </summary>
     [JsonPropertyName("message")]
     [Required]
     public WebhookMessage Message { get; init; } = null!;
 
     /// <summary>
-    /// Подписка.
+    /// Subscription.
     /// </summary>
     [JsonPropertyName("subscription")]
     [Required]

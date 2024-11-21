@@ -1,77 +1,80 @@
 ﻿namespace PaymentService.Models.GooglePlayBilling;
 
+/// <summary>
+/// Enum representing the type of subscription notification.
+/// </summary>
 public enum SubscriptionNotificationType
 {
     /// <summary>
-    /// Подписка была восстановлена после блокировки учетной записи.
+    /// The subscription was recovered after the account was blocked.
     /// </summary>
     Recovered,
 
     /// <summary>
-    /// Активная подписка продлена.
+    /// The active subscription was renewed.
     /// </summary>
     Renewed,
 
     /// <summary>
-    /// Подписка была добровольно или принудительно отменена.
-    /// Для добровольной отмены отправляется, когда пользователь отменяет подписку.
+    /// The subscription was canceled either voluntarily or involuntarily.
+    /// For voluntary cancellation, it is sent when the user cancels the subscription.
     /// </summary>
     Canceled,
 
     /// <summary>
-    /// Приобретена новая подписка.
+    /// A new subscription was purchased.
     /// </summary>
     Purchased,
 
     /// <summary>
-    /// Подписка заблокирована (если включена).
+    /// The subscription is on hold (if enabled).
     /// </summary>
     OnHold,
 
     /// <summary>
-    /// Для подписки вступил льготный период (если он включен).
+    /// The subscription has entered a grace period (if enabled).
     /// </summary>
     InGracePeriod,
 
     /// <summary>
-    /// Пользователь восстановил свою подписку в меню «Play» > «Аккаунт» > «Подписки».
-    /// Подписка была отменена, но срок ее действия еще не истек на момент восстановления пользователя.
-    /// Дополнительную информацию см. в разделе Реставрации.
+    /// The user restored their subscription from the "Play" > "Account" > "Subscriptions" menu.
+    /// The subscription was canceled, but its term had not yet expired at the time of the user's restoration.
+    /// See the Restorations section for more information.
     /// </summary>
     Restarted,
 
     /// <summary>
-    /// Изменение цены подписки успешно подтверждено пользователем.
+    /// The subscription price change was successfully confirmed by the user.
     /// </summary>
     PriceChangeConfirmed,
 
     /// <summary>
-    /// Время повторения подписки было продлено.
+    /// The subscription renewal time was extended.
     /// </summary>
     Deferred,
 
     /// <summary>
-    /// Подписка приостановлена.
+    /// The subscription was paused.
     /// </summary>
     Paused,
 
     /// <summary>
-    /// График приостановки подписки был изменен.
+    /// The subscription pause schedule was changed.
     /// </summary>
     PauseScheduleChanged,
 
     /// <summary>
-    /// Подписка была отозвана у пользователя до истечения срока ее действия.
+    /// The subscription was revoked from the user before its term expired.
     /// </summary>
     Revoked,
 
     /// <summary>
-    /// Срок действия подписки истек.
+    /// The subscription term has expired.
     /// </summary>
     Expired,
 
     /// <summary>
-    /// Ожидающая транзакция подписки отменена.
+    /// A pending subscription transaction was canceled.
     /// </summary>
     PendingPurchaseCanceled
 }

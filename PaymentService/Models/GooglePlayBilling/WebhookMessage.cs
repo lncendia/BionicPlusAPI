@@ -4,26 +4,26 @@ using System.Text.Json.Serialization;
 namespace PaymentService.Models.GooglePlayBilling;
 
 /// <summary>
-/// Класс, представляющий сообщение.
+/// Class representing a message.
 /// </summary>
 public class WebhookMessage
 {
     /// <summary>
-    /// Данные сообщения.
+    /// Message data.
     /// </summary>
     [JsonPropertyName("data")]
     [Required]
     public string Data { get; init; } = string.Empty;
 
     /// <summary>
-    /// Идентификатор сообщения.
+    /// Message identifier.
     /// </summary>
     [JsonPropertyName("messageId")]
     [Required]
     public string MessageId { get; init; } = string.Empty;
 
     /// <summary>
-    /// Время публикации сообщения.
+    /// Message publish time.
     /// </summary>
     [JsonPropertyName("publishTime")]
     [Required]

@@ -3,30 +3,30 @@ using System.Text.Json.Serialization;
 namespace PaymentService.Models.GooglePlayBilling;
 
 /// <summary>
-/// Класс, представляющий уведомление о подписке.
+/// Class representing a subscription notification.
 /// </summary>
 public class SubscriptionNotification
 {
     /// <summary>
-    /// Версия уведомления.
+    /// Version of the notification.
     /// </summary>
     [JsonPropertyName("version")]
     public string Version { get; init; } = string.Empty;
 
     /// <summary>
-    /// Тип уведомления.
+    /// Type of the notification.
     /// </summary>
     [JsonPropertyName("notificationType")]
     public SubscriptionNotificationType NotificationType { get; init; }
 
     /// <summary>
-    /// Токен покупки.
+    /// Purchase token.
     /// </summary>
     [JsonPropertyName("purchaseToken")]
     public string PurchaseToken { get; init; } = string.Empty;
 
     /// <summary>
-    /// Идентификатор подписки.
+    /// Subscription identifier.
     /// </summary>
     [JsonPropertyName("subscriptionId")]
     public string SubscriptionId { get; init; } = string.Empty;

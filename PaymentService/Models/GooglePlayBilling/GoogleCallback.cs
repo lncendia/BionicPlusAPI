@@ -3,30 +3,30 @@ using System.Text.Json.Serialization;
 namespace PaymentService.Models.GooglePlayBilling;
 
 /// <summary>
-/// Класс, представляющий основное сообщение.
+/// Class representing the main message.
 /// </summary>
 public class GoogleCallback
 {
     /// <summary>
-    /// Версия сообщения.
+    /// Version of the message.
     /// </summary>
     [JsonPropertyName("version")]
     public string Version { get; init; } = string.Empty;
 
     /// <summary>
-    /// Имя пакета.
+    /// Package name.
     /// </summary>
-    [JsonPropertyName("packageName")] 
+    [JsonPropertyName("packageName")]
     public string PackageName { get; init; } = string.Empty;
 
     /// <summary>
-    /// Время события в миллисекундах.
+    /// Event time in milliseconds.
     /// </summary>
     [JsonPropertyName("eventTimeMillis")]
     public string EventTimeMillis { get; init; } = string.Empty;
 
     /// <summary>
-    /// Уведомление о подписке.
+    /// Subscription notification.
     /// </summary>
     [JsonPropertyName("subscriptionNotification")]
     public SubscriptionNotification? SubscriptionNotification { get; init; }

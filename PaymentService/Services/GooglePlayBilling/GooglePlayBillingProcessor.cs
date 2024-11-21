@@ -74,6 +74,7 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<GoogleCallback>, IDi
     {
         // Get the application name from the configuration
         var appName = googlePlayOptions.Value.AppName;
+        
         // Load Google credentials from the specified file
         var credential = GoogleCredential.FromFile(googlePlayOptions.Value.CredentialsPath);
 
