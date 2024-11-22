@@ -3,9 +3,6 @@ using DomainObjects.Pregnancy.Localizations;
 
 namespace PaymentService.Models.Emails;
 
-/// <summary>
-/// Родительская модель для формирования письма
-/// </summary>
 public class PaymentEmailModel
 {
     public string CancelSubscriptionBaseUrl { get; set; } = string.Empty;
