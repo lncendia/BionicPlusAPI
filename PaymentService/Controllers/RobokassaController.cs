@@ -1,56 +1,70 @@
 ﻿using DomainObjects.Pregnancy.UserProfile;
-using DomainObjects.Subscription;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PaymentService.Models.Robokassa;
-using PaymentService.Services.Implementations;
 using PaymentService.Services.Interfaces;
 using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
+using DomainObjects.Subscription;
+using PaymentService.Models.GooglePlayBilling;
+using PaymentService.Models.Robokassa;
 
-namespace PaymentService.Controllers
+namespace PaymentService.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class RobokassaController : Controller
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class RobokassaController : Controller
+    private readonly IUserService _userService;
+    private readonly IPaymentProcessor<RobokassaCallback> _robokassaPaymentProcessor;
+    private readonly IPaymentProcessor<GoogleCallback> _googlePlayBillingProcessor;
+    private readonly ILogger<RobokassaController> _logger;
+
+    public RobokassaController(IUserService userService, ILogger<RobokassaController> logger,
+        IPaymentProcessor<RobokassaCallback> paymentProcessorService,
+        IPaymentProcessor<GoogleCallback> googlePlayBillingProcessor)
     {
-        private readonly MailRecurringService _mailService;
-        private readonly RobokassaService _robokassaService;
-        private readonly IUserService _userService;
-        private readonly PaymentProcessorService _paymentProcessorService;
-        private readonly ILogger<RobokassaController> _logger;
+        _userService = userService;
+        _logger = logger;
+        _robokassaPaymentProcessor = paymentProcessorService;
+        _googlePlayBillingProcessor = googlePlayBillingProcessor;
+    }
 
-        public RobokassaController(IUserService userService, MailRecurringService mailService, RobokassaService robokassaService, PaymentProcessorService paymentProcessorService, ILogger<RobokassaController> logger)
+    [Authorize]
+    [HttpPost("checkout", Name = "Generate checkout link")]
+    public async Task<IActionResult> Checkout([FromBody] UserAgreement userAgreement, [FromQuery] string planId,
+        [FromQuery] string? promocode, [FromQuery] PaymentServiceType service)
+    {
+        if (!userAgreement.PersonalDataAgreement || !userAgreement.RecurringPaymentAgreement ||
+            !userAgreement.UserAgreementAgreement)
         {
-            _mailService = mailService;
-            _robokassaService = robokassaService;
-            _userService = userService;
-            _paymentProcessorService = paymentProcessorService;
-            _logger = logger;
+            return BadRequest("You must allow all user agreements.");
         }
 
-        [Authorize]
-        [HttpPost("checkout", Name = "Generate checkout link")]
-        public async Task<IActionResult> GenerateCheckoutLink([FromBody] UserAgreement userAgreement, [FromQuery] string planId, [FromQuery] string? promocode)
+        var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        await _userService.SaveUserAgreements(userAgreement, userId);
+
+        var result = service switch
         {
-            if(!userAgreement.PersonalDataAgreement || !userAgreement.RecurringPaymentAgreement || !userAgreement.UserAgreementAgreement)
-            {
-                return BadRequest("You must allow all user agreements.");
-            }
+            PaymentServiceType.Robokassa => _robokassaPaymentProcessor.CheckoutAsync(planId, promocode),
+            PaymentServiceType.GooglePlay => _googlePlayBillingProcessor.CheckoutAsync(planId, promocode),
+            _ => throw new ArgumentOutOfRangeException(nameof(service), service, null)
+        };
 
-            var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            var saveAgreementsTask = _userService.SaveUserAgreements(userAgreement, userId);
-            var linkTask = _robokassaService.GetCheckoutLink(planId, promocode);
-
-            await Task.WhenAll(saveAgreementsTask, linkTask);
-
-            return Ok(new {
-                id = linkTask.Result.subscriptionId,
-                link = linkTask.Result.link }) ; 
+        try
+        {
+            return Ok(await result);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error on checkout: {e}", ex.Message);
+            throw;
+        }
+    }
 
-        [HttpPost("result", Name = "Handle robokassa result")]
-        public async Task<ActionResult<string>> HandleRobokassaResult(
+    [HttpPost("result", Name = "Handle robokassa result")]
+    public async Task<ActionResult<string>> HandleRobokassaResult(
         [FromForm] string OutSum,
         [FromForm] string InvId,
         [FromForm] string EMail,
@@ -58,36 +72,73 @@ namespace PaymentService.Controllers
         [FromForm] string Shp_userId,
         [FromForm] string Shp_isFirst,
         [FromForm] string Shp_subscriptionId
-        )
+    )
+    {
+        var callback = new RobokassaCallback
         {
-            try
-            {
-                var sign = _robokassaService.VerifySignature(SignatureValue, OutSum, InvId, Shp_userId, Shp_isFirst, Shp_subscriptionId);
+            InvoiceId = InvId,
+            SubscriptionId = Shp_subscriptionId,
+            UserId = Shp_userId,
+            Signature = SignatureValue,
+            OutSum = OutSum,
+            IsFirst = bool.Parse(Shp_isFirst)
+        };
 
-                if (!sign)
-                {
-                    return BadRequest();
-                }
-
-                var isFirst = bool.Parse(Shp_isFirst);
-
-                await _paymentProcessorService.ProcessSuccessPayment(Shp_userId, InvId, isFirst, Shp_subscriptionId);
-
-                return Ok($"OK{InvId}");
-            }
-            catch(Exception ex)
-            {
-                _logger.LogError($"error occured on success ==================> {ex.Message}");
-                throw;
-            }
+        try
+        {
+            await _robokassaPaymentProcessor.VerifyAsync(callback);
+        }
+        catch (ApplicationException)
+        {
+            return BadRequest();
         }
 
-        [HttpPost("success", Name = "Success")]
-        public IActionResult Success([FromForm] string OutSum,
+        try
+        {
+            await _robokassaPaymentProcessor.ProcessAsync(callback);
+
+            return Ok($"OK{InvId}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"error occured on success ==================> {ex.Message}");
+            throw;
+        }
+    }
+
+    [HttpPost("success", Name = "Success")]
+    public IActionResult Success([FromForm] string OutSum,
         [FromForm] string InvId,
         [FromForm] string Shp_subscriptionId)
+    {
+        return Redirect($"https://web.babytips.me/billing/check-out/{Shp_subscriptionId}");
+    }
+
+
+    [HttpPost("google", Name = "Handle google event")]
+    public async Task<ActionResult<string>> Handle(GoogleWebhook webhook)
+    {
+        if (webhook == null)
         {
-            return Redirect($"https://web.babytips.me/billing/check-out/{Shp_subscriptionId}");
+            _logger.LogInformation("Google event is null");
+            return Ok();
+        }
+        _logger.LogInformation("Received google event: {webhook}", JsonSerializer.Serialize(webhook));
+        var base64Bytes = Convert.FromBase64String(webhook.Message.Data);
+        var data = Encoding.UTF8.GetString(base64Bytes);
+
+        _logger.LogInformation("Google webhook data decoded: {data}", data);
+        var callback = JsonSerializer.Deserialize<GoogleCallback>(data);
+        if (callback?.SubscriptionNotification == null) return Ok();
+        try
+        {
+            await _googlePlayBillingProcessor.ProcessAsync(callback);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"error occured on success ==================> {ex.Message}");
+            throw;
         }
     }
 }

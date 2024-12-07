@@ -33,10 +33,4 @@ public class ClientSettingsConfig
     /// </summary>
     [JsonPropertyName("googleClientIdWeb")]
     public string GoogleClientIdWeb => _baseConfig.GoogleClientIdWeb;
-
-    /// <summary>
-    /// Google client ID for Android.
-    /// </summary>
-    [JsonPropertyName("googleClientIdAndroid")]
-    public string GoogleClientIdAndroid => _baseConfig.GoogleClientIdAndroid;
 }

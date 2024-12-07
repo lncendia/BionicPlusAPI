@@ -32,4 +32,13 @@
     <ProjectReference Include="..\MailSenderLibrary\MailSenderLibrary.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Templates\Mailing\email-confirmation.en.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\Mailing\email-confirmation.ru.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

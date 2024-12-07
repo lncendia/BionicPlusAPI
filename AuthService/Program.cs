@@ -18,7 +18,6 @@ BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.Strin
 BsonSerializer.RegisterSerializer(new DateTimeSerializer(MongoDB.Bson.BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(MongoDB.Bson.BsonType.String));
 
-
 builder.Services.AddApplicationOptions(builder.Configuration);
 
 builder.Services.AddAspIdentity(builder.Configuration);
@@ -58,12 +57,13 @@ builder.Host.UseNLog();
 
 var app = builder.Build();
 
-// using (var scope = app.Services.CreateScope())
-// {
-//     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
-//     var appRole = new ApplicationRole { Name = "USER" };
-//     await roleManager.CreateAsync(appRole);
-// }
+/*
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+    var appRole = new ApplicationRole { Name = "USER" };
+    await roleManager.CreateAsync(appRole);
+} */
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -72,7 +72,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection();
 app.UseCors("corsapp");
 app.UseAuthentication();
 app.UseAuthorization();

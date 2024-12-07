@@ -1,10 +1,5 @@
 ﻿using DomainObjects.Subscription;
 using SubscriptionDBMongoAccessor.MongoClasses;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SubscriptionDBMongoAccessor
 {
@@ -65,7 +60,10 @@ namespace SubscriptionDBMongoAccessor
                 Promocode = mongoSub.Promocode,
                 Currency = mongoSub.Currency,
                 Discount = mongoSub.Discount,
-                Total = mongoSub.Total
+                Total = mongoSub.Total,
+                PaymentServiceType = mongoSub.PaymentServiceType,
+                GooglePurchaseToken = mongoSub.GooglePurchaseToken,
+                GoogleOrderId = mongoSub.GoogleOrderId,
             };
         }
 
@@ -84,7 +82,10 @@ namespace SubscriptionDBMongoAccessor
                 Promocode = sub.Promocode,
                 Currency = sub.Currency,
                 Discount = sub.Discount,
-                Total = sub.Total
+                Total = sub.Total,
+                PaymentServiceType = sub.PaymentServiceType,
+                GooglePurchaseToken = sub.GooglePurchaseToken,
+                GoogleOrderId = sub.GoogleOrderId,
             };
         }
 
@@ -101,7 +102,8 @@ namespace SubscriptionDBMongoAccessor
                 Limits = mongoPlan.Limits,
                 Name = mongoPlan.Name,
                 Price = mongoPlan.Price,
-                ResellerId = mongoPlan.ResellerId
+                ResellerId = mongoPlan.ResellerId,
+                GoogleSubscriptionId = mongoPlan.GoogleSubscriptionId,
             };
         }
 
@@ -118,7 +120,8 @@ namespace SubscriptionDBMongoAccessor
                 Limits = plan.Limits,
                 Name = plan.Name,
                 Price = plan.Price,
-                ResellerId = plan.ResellerId
+                ResellerId = plan.ResellerId,
+                GoogleSubscriptionId = plan.GoogleSubscriptionId,
             };
         }
     }

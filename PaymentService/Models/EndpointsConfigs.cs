@@ -1,10 +1,12 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace PaymentService.Models
+namespace PaymentService.Models;
+
+public class EndpointsConfig
 {
-    public class EndpointsConfig
-    {
-        [JsonPropertyName("authServiceUrl")]
-        public string AuthServiceUrl { get; set; } = string.Empty;
-    }
+    [JsonPropertyName("authServiceUrl")]
+    public string AuthServiceUrl { get; set; } = string.Empty;
+    
+    [JsonPropertyName("cancelSubscriptionBaseUrl")]
+    public string CancelSubscriptionBaseUrl { get; set; } = string.Empty;
 }

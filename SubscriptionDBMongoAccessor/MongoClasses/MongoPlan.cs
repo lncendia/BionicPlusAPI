@@ -1,11 +1,5 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using DomainObjects.Subscription;
 
 namespace SubscriptionDBMongoAccessor.MongoClasses
@@ -42,5 +36,8 @@ namespace SubscriptionDBMongoAccessor.MongoClasses
 
         [BsonElement("limits")]
         public Limit? Limits { get; set; }
+        
+        [BsonElement("googleSubscriptionId")]
+        public string? GoogleSubscriptionId { get; set; }
     }
 }

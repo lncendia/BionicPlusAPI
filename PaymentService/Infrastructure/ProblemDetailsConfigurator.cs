@@ -1,9 +1,8 @@
 ﻿using DomainObjects.Infrastracture.Exceptions;
 using Hellang.Middleware.ProblemDetails;
 using Microsoft.Extensions.Options;
-using System.Configuration;
 
-namespace PaymentService.Infrastracture
+namespace PaymentService.Infrastructure
 {
     public static class ProblemDetailsConfigurator
     {

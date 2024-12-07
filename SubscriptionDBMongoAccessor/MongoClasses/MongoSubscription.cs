@@ -1,12 +1,6 @@
 ﻿using DomainObjects.Subscription;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace SubscriptionDBMongoAccessor.MongoClasses
 {
@@ -27,7 +21,7 @@ namespace SubscriptionDBMongoAccessor.MongoClasses
         public Limit? Limits { get; set; }
 
         [BsonElement("invoiceId")]
-        public int InvoiceId { get; set; } 
+        public int? InvoiceId { get; set; } 
 
         [BsonElement("status")]
         public SubscriptionStatus Status { get; set; }
@@ -51,5 +45,14 @@ namespace SubscriptionDBMongoAccessor.MongoClasses
         [BsonElement("promocode")]
         [BsonIgnoreIfDefault]
         public string? Promocode { get; set; }
+        
+        [BsonElement("googleOrderId")]
+        public string? GoogleOrderId { get; set; }
+        
+        [BsonElement("googlePurchaseToken")]
+        public string? GooglePurchaseToken { get; set; } 
+        
+        [BsonElement("paymentServiceType")]
+        public PaymentServiceType PaymentServiceType { get; set; }
     }
 }

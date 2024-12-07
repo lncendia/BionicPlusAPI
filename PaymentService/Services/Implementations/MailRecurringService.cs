@@ -1,55 +1,33 @@
 ﻿using Hangfire;
-using System.Net.Mail;
+using PaymentService.Models.Emails;
+using PaymentService.Services.Robokassa.Interfaces;
 
-namespace PaymentService.Services.Implementations
+namespace PaymentService.Services.Robokassa.Implementations.Recurring
 {
     public class MailRecurringService 
     {
-        private const string MOUNTHLY_PREFIX = "MounthlyEmailJob";
-        private const string YEARLY_PREFIX = "YearlyEmailJob";
+        private const string MonthlyPrefix = "MounthlyEmailJob";
+        private const string YearlyPrefix = "YearlyEmailJob";
 
-        public void PlanMountlyPaymentNotificationMail(string emailAdress, string userId, DateTime nextSubDate, string sum, string subName)
+        public void PlanMonthlyPaymentNotificationMail(RecurrentPaymentEmailModel emailModel)
         {
             var utcNow = DateTime.UtcNow.AddDays(-14);
 
             var day = utcNow.Day;
             var hours = utcNow.Hour;
             var minutes = utcNow.Minute;
-
-            RecurringJob.AddOrUpdate<RobokassaMailService>($"{MOUNTHLY_PREFIX}_{userId}", x => x.SendRecurrentPaymentEmailAsync(emailAdress, nextSubDate, sum, subName), Cron.Monthly(day, hours, minutes));
-        }
-
-        public void PlanMinutelyMail(string emailAdress, string userId, DateTime nextSubDate, string sum, string subName)
-        {
-            var utcNow = DateTime.UtcNow;
-
-            var day = utcNow.Day;
-            var hours = utcNow.Hour;
-            var minutes = utcNow.Minute;
-
-
-            RecurringJob.AddOrUpdate<RobokassaMailService>($"Minute_{userId}", x => x.SendRecurrentPaymentEmailAsync(emailAdress, nextSubDate, sum, subName), "0 */3 * ? * *");
-        }
-
-        public void PlanYearlyMail(string emailAdress, string userId, DateTime nextSubDate, string sum, string subName)
-        {
-            var utcNow = DateTime.UtcNow.AddDays(-14);
-
-            var day = utcNow.Day;
-            var hours = utcNow.Hour;
-            var minutes = utcNow.Minute;
-
-            RecurringJob.AddOrUpdate<RobokassaMailService>($"{YEARLY_PREFIX}_{userId}", x => x.SendRecurrentPaymentEmailAsync(emailAdress, nextSubDate, sum, subName), Cron.Yearly(day, hours, minutes));
+            
+            RecurringJob.AddOrUpdate<IPaymentMailService>($"{MonthlyPrefix}_{emailModel.UserId}", x => x.SendRecurrentPaymentEmail(emailModel), Cron.Monthly(day, hours, minutes));
         }
 
         public void CancelMounthlyJob(string jobId)
         {
-            RecurringJob.RemoveIfExists($"{MOUNTHLY_PREFIX}_{jobId}");
+            RecurringJob.RemoveIfExists($"{MonthlyPrefix}_{jobId}");
         }
 
         public void CancelYearlyJob(string jobId)
         {
-            RecurringJob.RemoveIfExists($"{YEARLY_PREFIX}_{jobId}");
+            RecurringJob.RemoveIfExists($"{YearlyPrefix}_{jobId}");
         }
     }
 }

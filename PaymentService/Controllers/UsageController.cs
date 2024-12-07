@@ -1,7 +1,6 @@
 ﻿using DomainObjects.Subscription;
 using Microsoft.AspNetCore.Mvc;
 using PaymentService.Services.Interfaces;
-using System.ComponentModel.DataAnnotations;
 
 namespace PaymentService.Controllers
 {

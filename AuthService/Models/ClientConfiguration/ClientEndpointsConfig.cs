@@ -64,6 +64,12 @@ public class ClientEndpointsConfig
     /// </summary>
     [JsonPropertyName("loginUrl")]
     public string LoginUrl => CalculateUrl(_endpointsConfig.LoginUrl, _reverseProxyConfig.LoginProxy);
+    
+    /// <summary>
+    /// URL for external login.
+    /// </summary>
+    [JsonPropertyName("externalLoginUrl")]
+    public string ExternalLoginUrl => CalculateUrl(_endpointsConfig.ExternalLoginUrl, _reverseProxyConfig.LoginProxy);
 
     /// <summary>
     /// URL for registration.
@@ -220,9 +226,9 @@ public class ClientEndpointsConfig
     /// <summary>
     /// URL for Robokassa checkout.
     /// </summary>
-    [JsonPropertyName("robokassaCheckoutUrl")]
-    public string RobokassaCheckoutUrl =>
-        CalculateUrl(_endpointsConfig.RobokassaCheckoutUrl, _reverseProxyConfig.PaymentProxy);
+    [JsonPropertyName("checkoutUrl")]
+    public string CheckoutUrl =>
+        CalculateUrl(_endpointsConfig.CheckoutUrl, _reverseProxyConfig.PaymentProxy);
 
     /// <summary>
     /// URL for promocode.

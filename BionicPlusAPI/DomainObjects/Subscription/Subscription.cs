@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
 namespace DomainObjects.Subscription
 {
@@ -22,7 +17,7 @@ namespace DomainObjects.Subscription
         public Limit? Limits { get; set; }
 
         [JsonPropertyName("invoiceId")]
-        public int InvoiceId { get; set; } 
+        public int? InvoiceId { get; set; } 
 
         [JsonPropertyName("status")]
         public SubscriptionStatus Status { get; set; } 
@@ -46,5 +41,14 @@ namespace DomainObjects.Subscription
         [JsonPropertyName("promocode")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Promocode { get; set; }
+        
+        [JsonPropertyName("googleOrderId")]
+        public string? GoogleOrderId { get; set; }
+        
+        [JsonPropertyName("googlePurchaseToken")]
+        public string? GooglePurchaseToken { get; set; } 
+        
+        [JsonPropertyName("paymentServiceType")]
+        public PaymentServiceType PaymentServiceType { get; set; }
     }
 }

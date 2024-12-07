@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Options;
 using PaymentService.Services.Interfaces;
 using SubscriptionDBMongoAccessor;
-using SubscriptionDBMongoAccessor.Infrastracture;
+using SubscriptionDBMongoAccessor.Infrastructure;
 
 namespace PaymentService.Services.Implementations
 {
@@ -10,10 +10,11 @@ namespace PaymentService.Services.Implementations
     {
         private readonly SubscriptionDBAccessor _dbAccessor;
 
-        public PlanService(IOptions<DbSettings> settings)
+        public PlanService(IOptions<DbSettings> dbSettings, IOptions<SubscriptionsConfig> subscriptionsConfig)
         {
-            _dbAccessor = new SubscriptionDBAccessor(settings.Value);
+            _dbAccessor = new SubscriptionDBAccessor(dbSettings.Value, subscriptionsConfig.Value);
         }
+        
         public async Task<Plan> GetPlan(string planId)
         {
             var plan = await _dbAccessor.GetPlan(planId);

@@ -8,8 +8,9 @@ namespace DomainObjects.Subscription
 {
     public enum SubscriptionStatus
     {
-        ACTIVE,
-        PENDING,
-        INACTIVE,
+        Active,
+        Pending,
+        Inactive,
+        Failed
     }
 }

@@ -13,9 +13,6 @@ public class SettingsConfig
     [JsonPropertyName("googleClientIdWeb")]
     public string GoogleClientIdWeb { get; set; } = string.Empty;
     
-    [JsonPropertyName("googleClientIdAndroid")]
-    public string GoogleClientIdAndroid { get; set; } = string.Empty;
-    
     [JsonPropertyName("externalGoogleAudiences")]
     public string ExternalGoogleAudiences { get; set; } = string.Empty;
 }

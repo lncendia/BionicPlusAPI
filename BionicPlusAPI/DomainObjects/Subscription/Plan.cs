@@ -39,6 +39,8 @@ namespace DomainObjects.Subscription
 
         [JsonPropertyName("limits")]
         public Limit? Limits { get; set; }
-
+        
+        [JsonPropertyName("googleSubscriptionId")]
+        public string? GoogleSubscriptionId { get; set; } = string.Empty;
     }
 }

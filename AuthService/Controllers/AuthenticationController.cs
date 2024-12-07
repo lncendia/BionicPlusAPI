@@ -229,7 +229,7 @@ public class AuthenticationController : ControllerBase
     {
         // Проверяем капчу
         var captchaResult = await ValidateCaptcha(register.Captcha);
-
+        
         // Если ответ не пустой, возвращаем его пользователю
         if (captchaResult != null) return captchaResult;
 
@@ -698,7 +698,7 @@ public class AuthenticationController : ControllerBase
             };
 
             // Register the user in the system
-            var result = await CreateUserAsync(user);
+            var result = await CreateUserAsync(user, register.Password);
 
             // If an error occurred during registration, return the error response
             if (result != null) return result;

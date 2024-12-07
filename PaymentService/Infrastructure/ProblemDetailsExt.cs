@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace PaymentService.Infrastracture
+namespace PaymentService.Infrastructure
 {
     public class ProblemDetailsExt: ProblemDetails
     {

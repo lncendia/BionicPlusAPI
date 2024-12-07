@@ -9,6 +9,9 @@ public class EndpointsConfig
 
     [JsonPropertyName("loginUrl")]
     public string LoginUrl { get; set; } = string.Empty;
+    
+    [JsonPropertyName("externalLoginUrl")]
+    public string ExternalLoginUrl { get; set; } = string.Empty;
 
     [JsonPropertyName("registerUrl")]
     public string RegisterUrl { get; set; } = string.Empty;
@@ -85,8 +88,8 @@ public class EndpointsConfig
     [JsonPropertyName("subscriptionUrl")]
     public string SubscriptionUrl { get; set; } = string.Empty;
 
-    [JsonPropertyName("robokassaCheckoutUrl")]
-    public string RobokassaCheckoutUrl { get; set; } = string.Empty;
+    [JsonPropertyName("checkoutUrl")]
+    public string CheckoutUrl { get; set; } = string.Empty;
 
     [JsonPropertyName("promocodeUrl")]
     public string PromocodeUrl { get; set; } = string.Empty;

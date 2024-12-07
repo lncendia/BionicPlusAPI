@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text.Json;
 using DomainObjects.Subscription;
 using Google.Apis.AndroidPublisher.v3;
 using Google.Apis.AndroidPublisher.v3.Data;
@@ -60,6 +61,11 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<GoogleCallback>, IDi
     private readonly string _appName;
 
     /// <summary>
+    /// Logger.
+    /// </summary>
+    private readonly ILogger<GooglePlayBillingProcessor> _logger;
+
+    /// <summary>
     /// Constructor for initializing the GooglePlayBillingProcessor.
     /// </summary>
     /// <param name="subscriptionService">Service for managing subscriptions.</param>
@@ -69,10 +75,11 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<GoogleCallback>, IDi
     /// <param name="paymentMailService">Service for sending payment-related emails.</param>
     /// <param name="mailService">Service for handling recurring mail notifications.</param>
     /// <param name="googlePlayOptions">Configuration for Google Play.</param>
+    /// <param name="logger">Logger.</param>
     public GooglePlayBillingProcessor(ISubscriptionService subscriptionService, IUserService userService,
         IOptions<EndpointsConfig> endpointsOptions,
         IPlanService planService, IPaymentMailService paymentMailService, MailRecurringService mailService,
-        IOptions<GooglePlayConfig> googlePlayOptions)
+        IOptions<GooglePlayConfig> googlePlayOptions, ILogger<GooglePlayBillingProcessor> logger)
     {
         // Get the application name from the configuration
         var appName = googlePlayOptions.Value.AppName;
@@ -100,6 +107,7 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<GoogleCallback>, IDi
 
         // Initialize the mail service
         _mailService = mailService;
+        _logger = logger;
 
         // Create a scoped credential for Android Publisher API
         credential = credential.CreateScoped(AndroidPublisherService.ScopeConstants.Androidpublisher);
@@ -147,8 +155,11 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<GoogleCallback>, IDi
         // If the subscription is purchased, acknowledge the purchase
         if (@event.SubscriptionNotification.NotificationType == SubscriptionNotificationType.Purchased)
         {
+            
+            _logger.LogInformation("Acknowledging subscription");
+            
             // Acknowledge the purchase
-            await _androidPublisherService.Purchases.Subscriptions
+            var response = await _androidPublisherService.Purchases.Subscriptions
                 .Acknowledge(
                     new SubscriptionPurchasesAcknowledgeRequest(),
                     @event.PackageName,
@@ -156,7 +167,11 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<GoogleCallback>, IDi
                     @event.SubscriptionNotification.PurchaseToken
                 )
                 .ExecuteAsync();
+            
+            _logger.LogInformation("Acknowledge response: {response}", response);
         }
+        
+        _logger.LogInformation("Verify succeeded");
     }
 
     /// <summary>
@@ -166,6 +181,8 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<GoogleCallback>, IDi
     /// <exception cref="ApplicationException">Thrown when the developer payload is invalid.</exception>
     public async Task ProcessAsync(GoogleCallback callback)
     {
+        _logger.LogInformation("Getting subscription");
+        
         // Get the Google subscription details
         var googleSubscription = await _androidPublisherService.Purchases.Subscriptions
             .Get(
@@ -174,10 +191,14 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<GoogleCallback>, IDi
                 callback.SubscriptionNotification.PurchaseToken
             )
             .ExecuteAsync();
+        
+        _logger.LogInformation("Subscription response: {response}", JsonSerializer.Serialize(googleSubscription));
 
         // If the subscription is purchased
         if (callback.SubscriptionNotification.NotificationType == SubscriptionNotificationType.Purchased)
         {
+            _logger.LogInformation("New subscription purchased");
+            
             // Split the developer payload to get user ID and subscription ID
             var developerSplit = googleSubscription.DeveloperPayload.Split('_', 2);
 
@@ -345,6 +366,8 @@ public class GooglePlayBillingProcessor : IPaymentProcessor<GoogleCallback>, IDi
             // Ensure the subscription is removed and set a new free subscription
             await _subscriptionService.InsureSubscription(subscription.Id!);
         }
+        
+        _logger.LogInformation("Process succeeded");
     }
 
     /// <summary>

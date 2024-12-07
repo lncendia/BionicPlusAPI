@@ -8,7 +8,7 @@ public enum SubscriptionNotificationType
     /// <summary>
     /// The subscription was recovered after the account was blocked.
     /// </summary>
-    Recovered,
+    Recovered = 1,
 
     /// <summary>
     /// The active subscription was renewed.
